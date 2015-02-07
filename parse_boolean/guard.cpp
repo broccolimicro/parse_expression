@@ -25,9 +25,34 @@ guard::guard(configuration &config, tokenizer &tokens, int i)
 	parse(config, tokens, i);
 }
 
+guard::guard(const guard &g)
+{
+	debug_name = "guard";
+	valid = g.valid;
+	level = g.level;
+	functions = g.functions;
+	for (int i = 0; i < (int)g.operands.size(); i++)
+	{
+		if (g.operands[i]->is_a<guard>())
+			operands.push_back(new guard(*(guard*)g.operands[i]));
+		else if (g.operands[i]->is_a<variable_name>())
+			operands.push_back(new variable_name(*(variable_name*)g.operands[i]));
+		else if (g.operands[i]->is_a<constant>())
+			operands.push_back(new constant(*(constant*)g.operands[i]));
+	}
+}
+
 guard::~guard()
 {
+	for (int i = 0; i < (int)operands.size(); i++)
+	{
+		if (operands[i] != NULL)
+			delete operands[i];
+		operands[i] = NULL;
+	}
 
+	operands.clear();
+	functions.clear();
 }
 
 void guard::parse(configuration &config, tokenizer &tokens, int i)
@@ -142,7 +167,7 @@ void guard::register_syntax(tokenizer &tokens)
 	}
 }
 
-string guard::to_string(string tab)
+string guard::to_string(string tab) const
 {
 	string result = "";
 	for (int i = 0; i < (int)operands.size(); i++)
@@ -165,4 +190,23 @@ string guard::to_string(string tab)
 	}
 	return result;
 }
+
+guard &guard::operator=(const guard &g)
+{
+	debug_name = "guard";
+	valid = g.valid;
+	level = g.level;
+	functions = g.functions;
+	for (int i = 0; i < (int)g.operands.size(); i++)
+	{
+		if (g.operands[i]->is_a<guard>())
+			operands.push_back(new guard(*(guard*)g.operands[i]));
+		else if (g.operands[i]->is_a<variable_name>())
+			operands.push_back(new variable_name(*(variable_name*)g.operands[i]));
+		else if (g.operands[i]->is_a<constant>())
+			operands.push_back(new constant(*(constant*)g.operands[i]));
+	}
+	return *this;
+}
+
 }

@@ -70,7 +70,7 @@ void variable_name::register_syntax(tokenizer &tokens)
 	}
 }
 
-string variable_name::to_string(string tab)
+string variable_name::to_string(string tab) const
 {
 	string result;
 	if (names.size() > 0)

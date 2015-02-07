@@ -27,7 +27,7 @@ struct assignment : parse::syntax
 	static bool is_next(configuration &config, tokenizer &tokens, int i = 1);
 	static void register_syntax(tokenizer &tokens);
 
-	string to_string(string tab = "");
+	string to_string(string tab = "") const;
 };
 }
 

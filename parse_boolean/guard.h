@@ -17,6 +17,7 @@ struct guard : parse::syntax
 {
 	guard();
 	guard(configuration &config, tokenizer &tokens, int i = 0);
+	guard(const guard &g);
 	~guard();
 
 	vector<parse::syntax*> operands;
@@ -27,7 +28,9 @@ struct guard : parse::syntax
 	static bool is_next(configuration &config, tokenizer &tokens, int i = 1);
 	static void register_syntax(tokenizer &tokens);
 
-	string to_string(string tab = "");
+	string to_string(string tab = "") const;
+
+	guard &operator=(const guard &g);
 };
 }
 

@@ -70,7 +70,7 @@ void assignment::register_syntax(tokenizer &tokens)
 	}
 }
 
-string assignment::to_string(string tab)
+string assignment::to_string(string tab) const
 {
 	return variable.to_string(tab) + (value ? "+" : "-");
 }

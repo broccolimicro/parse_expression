@@ -51,7 +51,7 @@ void constant::register_syntax(tokenizer &tokens)
 	}
 }
 
-string constant::to_string(string tab)
+string constant::to_string(string tab) const
 {
 	return value;
 }
