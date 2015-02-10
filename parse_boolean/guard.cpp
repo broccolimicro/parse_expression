@@ -18,17 +18,20 @@ guard::guard()
 	level = -1;
 }
 
-guard::guard(configuration &config, tokenizer &tokens, int i)
+guard::guard(tokenizer &tokens, int i, void *data)
 {
 	debug_name = "guard";
 	level = -1;
-	parse(config, tokens, i);
+	parse(tokens, i, data);
 }
 
 guard::guard(const guard &g)
 {
 	debug_name = "guard";
 	valid = g.valid;
+	segment_name = g.segment_name;
+	start = g.start;
+	end = g.end;
 	level = g.level;
 	functions = g.functions;
 	for (int i = 0; i < (int)g.operands.size(); i++)
@@ -44,6 +47,11 @@ guard::guard(const guard &g)
 
 guard::~guard()
 {
+	clear();
+}
+
+void guard::clear()
+{
 	for (int i = 0; i < (int)operands.size(); i++)
 	{
 		if (operands[i] != NULL)
@@ -55,8 +63,10 @@ guard::~guard()
 	functions.clear();
 }
 
-void guard::parse(configuration &config, tokenizer &tokens, int i)
+void guard::parse(tokenizer &tokens, int i, void *data)
 {
+	tokens.syntax_start(this);
+
 	vector<vector<string> > binary;
 	binary.push_back(vector<string>());
 	binary[0].push_back("|");
@@ -65,8 +75,6 @@ void guard::parse(configuration &config, tokenizer &tokens, int i)
 	vector<string> unary;
 	unary.push_back("~");
 	level = i;
-
-	valid = true;
 
 	// Binary Operators
 	if (i < (int)binary.size())
@@ -78,10 +86,10 @@ void guard::parse(configuration &config, tokenizer &tokens, int i)
 		tokens.increment(true);
 		tokens.expect<guard>();
 
-		if (tokens.decrement(config, __FILE__, __LINE__))
-			operands.push_back(new guard(config, tokens, i+1));
+		if (tokens.decrement(__FILE__, __LINE__, data))
+			operands.push_back(new guard(tokens, i+1, data));
 
-		while (tokens.decrement(config, __FILE__, __LINE__))
+		while (tokens.decrement(__FILE__, __LINE__, data))
 		{
 			functions.push_back(tokens.next());
 
@@ -92,8 +100,8 @@ void guard::parse(configuration &config, tokenizer &tokens, int i)
 			tokens.increment(true);
 			tokens.expect<guard>();
 
-			if (tokens.decrement(config, __FILE__, __LINE__))
-				operands.push_back(new guard(config, tokens, i+1));
+			if (tokens.decrement(__FILE__, __LINE__, data))
+				operands.push_back(new guard(tokens, i+1, data));
 		}
 	}
 	// Unary operators
@@ -106,7 +114,7 @@ void guard::parse(configuration &config, tokenizer &tokens, int i)
 		for (int j = 0; j < (int)unary.size(); j++)
 			tokens.expect(unary[j]);
 
-		while (tokens.decrement(config, __FILE__, __LINE__))
+		while (tokens.decrement(__FILE__, __LINE__, data))
 		{
 			functions.push_back(tokens.next());
 
@@ -115,8 +123,8 @@ void guard::parse(configuration &config, tokenizer &tokens, int i)
 				tokens.expect(unary[j]);
 		}
 
-		if (tokens.decrement(config, __FILE__, __LINE__))
-			operands.push_back(new guard(config, tokens, i+1));
+		if (tokens.decrement(__FILE__, __LINE__, data))
+			operands.push_back(new guard(tokens, i+1, data));
 	}
 	// Parens and Variable names
 	else
@@ -126,7 +134,7 @@ void guard::parse(configuration &config, tokenizer &tokens, int i)
 		tokens.expect<constant>();
 		tokens.expect("(");
 
-		if (tokens.decrement(config, __FILE__, __LINE__))
+		if (tokens.decrement(__FILE__, __LINE__, data))
 		{
 			if (tokens.found("("))
 			{
@@ -137,23 +145,25 @@ void guard::parse(configuration &config, tokenizer &tokens, int i)
 				tokens.increment(true);
 				tokens.expect<guard>();
 
-				if (tokens.decrement(config, __FILE__, __LINE__))
-					operands.push_back(new guard(config, tokens));
+				if (tokens.decrement(__FILE__, __LINE__, data))
+					operands.push_back(new guard(tokens, 0, data));
 
-				if (tokens.decrement(config, __FILE__, __LINE__))
+				if (tokens.decrement(__FILE__, __LINE__, data))
 					tokens.next();
 			}
 			else if (tokens.found<variable_name>())
-				operands.push_back(new variable_name(config, tokens));
+				operands.push_back(new variable_name(tokens, data));
 			else if (tokens.found<constant>())
-				operands.push_back(new constant(config, tokens));
+				operands.push_back(new constant(tokens, data));
 		}
 	}
+
+	tokens.syntax_end(this);
 }
 
-bool guard::is_next(configuration &config, tokenizer &tokens, int i)
+bool guard::is_next(tokenizer &tokens, int i, void *data)
 {
-	return variable_name::is_next(config, tokens, i) || constant::is_next(config, tokens, i) || tokens.is_next("(", i) || tokens.is_next("~", i);
+	return variable_name::is_next(tokens, i, data) || constant::is_next(tokens, i, data) || tokens.is_next("(", i) || tokens.is_next("~", i);
 }
 
 void guard::register_syntax(tokenizer &tokens)
@@ -193,10 +203,15 @@ string guard::to_string(string tab) const
 
 guard &guard::operator=(const guard &g)
 {
+	clear();
 	debug_name = "guard";
 	valid = g.valid;
+	segment_name = g.segment_name;
+	start = g.start;
+	end = g.end;
 	level = g.level;
 	functions = g.functions;
+
 	for (int i = 0; i < (int)g.operands.size(); i++)
 	{
 		if (g.operands[i]->is_a<guard>())

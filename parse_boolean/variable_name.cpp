@@ -16,10 +16,10 @@ variable_name::variable_name()
 	debug_name = "variable_name";
 }
 
-variable_name::variable_name(configuration &config, tokenizer &tokens)
+variable_name::variable_name(tokenizer &tokens, void *data)
 {
 	debug_name = "variable_name";
-	parse(config, tokens);
+	parse(tokens, data);
 }
 
 variable_name::~variable_name()
@@ -27,9 +27,9 @@ variable_name::~variable_name()
 
 }
 
-void variable_name::parse(configuration &config, tokenizer &tokens)
+void variable_name::parse(tokenizer &tokens, void *data)
 {
-	valid = true;
+	tokens.syntax_start(this);
 
 	tokens.increment(false);
 	tokens.expect(".");
@@ -37,10 +37,10 @@ void variable_name::parse(configuration &config, tokenizer &tokens)
 	tokens.increment(true);
 	tokens.expect<parse::instance>();
 
-	if (tokens.decrement(config, __FILE__, __LINE__))
+	if (tokens.decrement(__FILE__, __LINE__, data))
 		names.push_back(tokens.next());
 
-	while (tokens.decrement(config, __FILE__, __LINE__))
+	while (tokens.decrement(__FILE__, __LINE__, data))
 	{
 		tokens.next();
 
@@ -50,12 +50,14 @@ void variable_name::parse(configuration &config, tokenizer &tokens)
 		tokens.increment(true);
 		tokens.expect<parse::instance>();
 
-		if (tokens.decrement(config, __FILE__, __LINE__))
+		if (tokens.decrement(__FILE__, __LINE__, data))
 			names.push_back(tokens.next());
 	}
+
+	tokens.syntax_end(this);
 }
 
-bool variable_name::is_next(configuration &config, tokenizer &tokens, int i)
+bool variable_name::is_next(tokenizer &tokens, int i, void *data)
 {
 	return tokens.is_next<parse::instance>(i);
 }

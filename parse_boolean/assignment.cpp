@@ -17,11 +17,11 @@ assignment::assignment()
 	value = false;
 }
 
-assignment::assignment(configuration &config, tokenizer &tokens)
+assignment::assignment(tokenizer &tokens, void *data)
 {
 	debug_name = "assignment";
 	value = false;
-	parse(config, tokens);
+	parse(tokens, data);
 }
 
 assignment::~assignment()
@@ -29,9 +29,9 @@ assignment::~assignment()
 
 }
 
-void assignment::parse(configuration &config, tokenizer &tokens)
+void assignment::parse(tokenizer &tokens, void *data)
 {
-	valid = true;
+	tokens.syntax_start(this);
 
 	tokens.increment(true);
 	tokens.expect("+");
@@ -40,10 +40,10 @@ void assignment::parse(configuration &config, tokenizer &tokens)
 	tokens.increment(true);
 	tokens.expect<variable_name>();
 
-	if (tokens.decrement(config, __FILE__, __LINE__))
-		variable.parse(config, tokens);
+	if (tokens.decrement(__FILE__, __LINE__, data))
+		variable.parse(tokens, data);
 
-	if (tokens.decrement(config, __FILE__, __LINE__))
+	if (tokens.decrement(__FILE__, __LINE__, data))
 	{
 		if (tokens.found("+"))
 			value = true;
@@ -52,11 +52,13 @@ void assignment::parse(configuration &config, tokenizer &tokens)
 
 		tokens.next();
 	}
+
+	tokens.syntax_end(this);
 }
 
-bool assignment::is_next(configuration &config, tokenizer &tokens, int i)
+bool assignment::is_next(tokenizer &tokens, int i, void *data)
 {
-	return variable_name::is_next(config, tokens, i);
+	return variable_name::is_next(tokens, i, data);
 }
 
 void assignment::register_syntax(tokenizer &tokens)

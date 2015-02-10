@@ -16,13 +16,13 @@ namespace parse_boolean
 struct constant : parse::syntax
 {
 	constant();
-	constant(configuration &config, tokenizer &tokens);
+	constant(tokenizer &tokens, void *data = NULL);
 	~constant();
 
 	string value;
 
-	void parse(configuration &config, tokenizer &tokens);
-	static bool is_next(configuration &config, tokenizer &tokens, int i = 1);
+	void parse(tokenizer &tokens, void *data = NULL);
+	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);
 	static void register_syntax(tokenizer &tokens);
 
 	string to_string(string tab = "") const;

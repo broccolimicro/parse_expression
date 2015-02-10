@@ -16,7 +16,7 @@ namespace parse_boolean
 struct guard : parse::syntax
 {
 	guard();
-	guard(configuration &config, tokenizer &tokens, int i = 0);
+	guard(tokenizer &tokens, int i = 0, void *data = NULL);
 	guard(const guard &g);
 	~guard();
 
@@ -24,8 +24,10 @@ struct guard : parse::syntax
 	vector<string> functions;
 	int level;
 
-	void parse(configuration &config, tokenizer &tokens, int i = 0);
-	static bool is_next(configuration &config, tokenizer &tokens, int i = 1);
+	void clear();
+
+	void parse(tokenizer &tokens, int i = 0, void *data = NULL);
+	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);
 	static void register_syntax(tokenizer &tokens);
 
 	string to_string(string tab = "") const;

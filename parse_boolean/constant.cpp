@@ -15,10 +15,10 @@ constant::constant()
 	debug_name = "constant";
 }
 
-constant::constant(configuration &config, tokenizer &tokens)
+constant::constant(tokenizer &tokens, void *data)
 {
 	debug_name = "constant";
-	parse(config, tokens);
+	parse(tokens, data);
 }
 
 constant::~constant()
@@ -26,18 +26,20 @@ constant::~constant()
 
 }
 
-void constant::parse(configuration &config, tokenizer &tokens)
+void constant::parse(tokenizer &tokens, void *data)
 {
-	valid = true;
+	tokens.syntax_start(this);
 
 	tokens.increment(true);
 	tokens.expect<parse::number>();
 
-	if (tokens.decrement(config, __FILE__, __LINE__))
+	if (tokens.decrement(__FILE__, __LINE__, data))
 		value = tokens.next();
+
+	tokens.syntax_end(this);
 }
 
-bool constant::is_next(configuration &config, tokenizer &tokens, int i)
+bool constant::is_next(tokenizer &tokens, int i, void *data)
 {
 	return tokens.is_next<parse::number>(i);
 }
