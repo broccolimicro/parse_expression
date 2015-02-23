@@ -35,10 +35,10 @@ void variable_name::parse(tokenizer &tokens, void *data)
 	tokens.expect(".");
 
 	tokens.increment(true);
-	tokens.expect<parse::instance>();
+	tokens.expect<member_name>();
 
 	if (tokens.decrement(__FILE__, __LINE__, data))
-		names.push_back(tokens.next());
+		names.push_back(member_name(tokens, data));
 
 	while (tokens.decrement(__FILE__, __LINE__, data))
 	{
@@ -48,10 +48,10 @@ void variable_name::parse(tokenizer &tokens, void *data)
 		tokens.expect(".");
 
 		tokens.increment(true);
-		tokens.expect<parse::instance>();
+		tokens.expect<member_name>();
 
 		if (tokens.decrement(__FILE__, __LINE__, data))
-			names.push_back(tokens.next());
+			names.push_back(member_name(tokens, data));
 	}
 
 	tokens.syntax_end(this);
@@ -59,7 +59,7 @@ void variable_name::parse(tokenizer &tokens, void *data)
 
 bool variable_name::is_next(tokenizer &tokens, int i, void *data)
 {
-	return tokens.is_next<parse::instance>(i);
+	return member_name::is_next(tokens, i, data);
 }
 
 void variable_name::register_syntax(tokenizer &tokens)
@@ -67,8 +67,8 @@ void variable_name::register_syntax(tokenizer &tokens)
 	if (!tokens.syntax_registered<variable_name>())
 	{
 		tokens.register_syntax<variable_name>();
-		tokens.register_token<parse::instance>();
 		tokens.register_token<parse::symbol>();
+		member_name::register_syntax(tokens);
 	}
 }
 
@@ -76,10 +76,15 @@ string variable_name::to_string(string tab) const
 {
 	string result;
 	if (names.size() > 0)
-		result = names[0];
+		result = names[0].to_string(tab);
 
 	for (int i = 1; i < (int)names.size(); i++)
-		result += "." + names[i];
+		result += "." + names[i].to_string(tab);
 	return result;
+}
+
+parse::syntax *variable_name::clone() const
+{
+	return new variable_name(*this);
 }
 }

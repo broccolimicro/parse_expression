@@ -1,5 +1,5 @@
 /*
- * assignment.h
+ * complement.h
  *
  *  Created on: Jan 18, 2015
  *      Author: nbingham
@@ -9,23 +9,24 @@
 #include <parse/syntax.h>
 #include "variable_name.h"
 
-#ifndef parse_boolean_assignment_h
-#define parse_boolean_assignment_h
+#ifndef parse_boolean_complement_h
+#define parse_boolean_complement_h
 
 namespace parse_boolean
 {
-struct internal_choice;
+struct disjunction;
 
-struct assignment : parse::syntax
+struct complement : parse::syntax
 {
-	assignment();
-	assignment(tokenizer &tokens, void *data = NULL);
-	assignment(const assignment &copy);
-	~assignment();
+	complement();
+	complement(tokenizer &tokens, void *data = NULL);
+	complement(const complement &copy);
+	~complement();
 
-	bool value;
+	bool invert;
+	string value;
 	variable_name variable;
-	internal_choice *expression;
+	disjunction *expression;
 
 	void parse(tokenizer &tokens, void *data = NULL);
 	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);
@@ -34,7 +35,7 @@ struct assignment : parse::syntax
 	string to_string(string tab = "") const;
 	parse::syntax *clone() const;
 
-	assignment &operator=(const assignment &copy);
+	complement &operator=(const complement &copy);
 };
 }
 

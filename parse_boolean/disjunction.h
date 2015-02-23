@@ -1,5 +1,5 @@
 /*
- * variable_name.h
+ * disjunction.h
  *
  *  Created on: Jan 18, 2015
  *      Author: nbingham
@@ -7,20 +7,20 @@
 
 #include <parse/parse.h>
 #include <parse/syntax.h>
-#include "member_name.h"
+#include "conjunction.h"
 
-#ifndef parse_boolean_variable_name_h
-#define parse_boolean_variable_name_h
+#ifndef parse_boolean_disjunction_h
+#define parse_boolean_disjunction_h
 
 namespace parse_boolean
 {
-struct variable_name : parse::syntax
+struct disjunction : parse::syntax
 {
-	variable_name();
-	variable_name(tokenizer &tokens, void *data = NULL);
-	~variable_name();
+	disjunction();
+	disjunction(tokenizer &tokens, void *data = NULL);
+	~disjunction();
 
-	vector<member_name> names;
+	vector<conjunction> branches;
 
 	void parse(tokenizer &tokens, void *data = NULL);
 	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);
