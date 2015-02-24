@@ -9,6 +9,7 @@
 #include "internal_choice.h"
 #include <parse/default/instance.h>
 #include <parse/default/symbol.h>
+#include <parse/default/number.h>
 
 namespace parse_boolean
 {
@@ -94,7 +95,21 @@ void assignment::parse(tokenizer &tokens, void *data)
 
 bool assignment::is_next(tokenizer &tokens, int i, void *data)
 {
-	return variable_name::is_next(tokens, i, data) || tokens.is_next("(", i);
+	while (tokens.is_next("(", i))
+		i++;
+
+	if (!variable_name::is_next(tokens, i, data))
+		return false;
+
+	while (tokens.is_next<parse::number>(i) ||
+			tokens.is_next<parse::instance>(i) ||
+			tokens.is_next("[", i) ||
+			tokens.is_next("..", i) ||
+			tokens.is_next("]", i) ||
+			tokens.is_next(".", i))
+		i++;
+
+	return (tokens.is_next("+", i) || tokens.is_next("-", i));
 }
 
 void assignment::register_syntax(tokenizer &tokens)

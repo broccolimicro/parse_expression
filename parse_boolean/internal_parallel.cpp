@@ -38,7 +38,7 @@ void internal_parallel::parse(tokenizer &tokens, void *data)
 	if (tokens.decrement(__FILE__, __LINE__, data))
 		branches.push_back(assignment(tokens, data));
 
-	while (tokens.decrement(__FILE__, __LINE__, data))
+	while (tokens.decrement(__FILE__, __LINE__, data) && assignment::is_next(tokens, 2))
 	{
 		tokens.next();
 
