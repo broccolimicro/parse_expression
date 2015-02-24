@@ -74,16 +74,19 @@ void conjunction::register_syntax(tokenizer &tokens)
 string conjunction::to_string(string tab) const
 {
 	string result = "";
-	for (int i = 0; i < (int)branches.size(); i++)
-	{
-		if (i != 0)
-			result += "&";
+	if (branches.size() == 0)
+		result = "1";
+	else
+		for (int i = 0; i < (int)branches.size(); i++)
+		{
+			if (i != 0)
+				result += "&";
 
-		if (branches[i].valid)
-			result += branches[i].to_string(tab);
-		else
-			result += "null";
-	}
+			if (branches[i].valid)
+				result += branches[i].to_string(tab);
+			else
+				result += "null";
+		}
 	return result;
 }
 
