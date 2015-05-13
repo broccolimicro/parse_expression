@@ -86,6 +86,26 @@ string internal_choice::to_string(string tab) const
 	return result;
 }
 
+string internal_choice::to_string(bool nl, string tab) const
+{
+	string result = "";
+	for (int i = 0; i < (int)branches.size(); i++)
+	{
+		if (i != 0)
+		{
+			result += ":";
+			if (nl)
+				result += "\n";
+		}
+
+		if (branches[i].valid)
+			result += branches[i].to_string(tab);
+		else
+			result += "null";
+	}
+	return result;
+}
+
 parse::syntax *internal_choice::clone() const
 {
 	return new internal_choice(*this);
