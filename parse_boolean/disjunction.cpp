@@ -103,7 +103,7 @@ string disjunction::to_string(bool nl, string tab) const
 			{
 				result += "|";
 				if (nl)
-					result += "\n";
+					result += "\\n";
 			}
 
 			if (branches[i].valid)
