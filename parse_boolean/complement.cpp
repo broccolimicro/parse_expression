@@ -118,8 +118,28 @@ string complement::to_string(string tab) const
 		result += value;
 	else if (variable.valid)
 		result += variable.to_string(tab);
-	else if (expression != NULL && expression->valid)
+	else if (expression != NULL && expression->valid && expression->branches.size() > 1)
 		result += "(" + expression->to_string(tab) + ")";
+	else if (expression != NULL && expression->valid)
+		result += expression->to_string(tab);
+	else
+		result += "null";
+
+	return result;
+}
+
+string complement::to_string(int depth, string tab) const
+{
+	string result = invert ? "~" : "";
+
+	if (value != "")
+		result += value;
+	else if (variable.valid)
+		result += variable.to_string(tab);
+	else if (expression != NULL && expression->valid && expression->branches.size() > 1)
+		result += "(" + expression->to_string(depth, tab) + ")";
+	else if (expression != NULL && expression->valid)
+		result += expression->to_string(depth, tab);
 	else
 		result += "null";
 

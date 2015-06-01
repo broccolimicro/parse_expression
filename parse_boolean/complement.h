@@ -33,6 +33,7 @@ struct complement : parse::syntax
 	static void register_syntax(tokenizer &tokens);
 
 	string to_string(string tab = "") const;
+	string to_string(int depth, string tab = "") const;
 	parse::syntax *clone() const;
 
 	complement &operator=(const complement &copy);

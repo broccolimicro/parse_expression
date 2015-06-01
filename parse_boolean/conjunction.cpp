@@ -90,6 +90,25 @@ string conjunction::to_string(string tab) const
 	return result;
 }
 
+string conjunction::to_string(int depth, string tab) const
+{
+	string result = "";
+	if (branches.size() == 0)
+		result = "1";
+	else
+		for (int i = 0; i < (int)branches.size(); i++)
+		{
+			if (i != 0)
+				result += "&";
+
+			if (branches[i].valid)
+				result += branches[i].to_string(depth, tab);
+			else
+				result += "null";
+		}
+	return result;
+}
+
 parse::syntax *conjunction::clone() const
 {
 	return new conjunction(*this);

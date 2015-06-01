@@ -91,7 +91,7 @@ string disjunction::to_string(string tab) const
 	return result;
 }
 
-string disjunction::to_string(bool nl, string tab) const
+string disjunction::to_string(int depth, string tab) const
 {
 	string result = "";
 	if (branches.size() == 0)
@@ -102,12 +102,12 @@ string disjunction::to_string(bool nl, string tab) const
 			if (i != 0)
 			{
 				result += "|";
-				if (nl)
+				if (depth > 0)
 					result += "\\n";
 			}
 
 			if (branches[i].valid)
-				result += branches[i].to_string(tab);
+				result += branches[i].to_string(depth-1, tab);
 			else
 				result += "null";
 		}
