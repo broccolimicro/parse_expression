@@ -1,5 +1,5 @@
 /*
- * conjunction.h
+ * guard.h
  *
  *  Created on: Jan 18, 2015
  *      Author: nbingham
@@ -7,20 +7,26 @@
 
 #include <parse/parse.h>
 #include <parse/syntax.h>
-#include "complement.h"
+#include "variable_name.h"
 
-#ifndef parse_boolean_conjunction_h
-#define parse_boolean_conjunction_h
+#ifndef parse_boolean_guard_h
+#define parse_boolean_guard_h
 
 namespace parse_boolean
 {
-struct conjunction : parse::syntax
+struct guard : parse::syntax
 {
-	conjunction();
-	conjunction(tokenizer &tokens, void *data = NULL);
-	~conjunction();
+	guard();
+	guard(tokenizer &tokens, int operation = OR, void *data = NULL);
+	~guard();
 
-	vector<complement> branches;
+	vector<pair<guard, bool> > guards;
+	vector<pair<variable_name, bool> > literals;
+	vector<string> constants;
+	int operation;
+
+	static const int AND = 0;
+	static const int OR = 1;
 
 	void parse(tokenizer &tokens, void *data = NULL);
 	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);

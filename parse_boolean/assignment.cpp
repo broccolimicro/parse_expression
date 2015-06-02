@@ -6,87 +6,140 @@
  */
 
 #include "assignment.h"
-#include "internal_choice.h"
-#include <parse/default/instance.h>
 #include <parse/default/symbol.h>
-#include <parse/default/number.h>
 
 namespace parse_boolean
 {
 assignment::assignment()
 {
 	debug_name = "assignment";
-	value = false;
-	expression = NULL;
+	operation = CHOICE;
 }
 
-assignment::assignment(tokenizer &tokens, void *data)
+assignment::assignment(tokenizer &tokens, int operation, void *data)
 {
 	debug_name = "assignment";
-	value = false;
-	expression = NULL;
+	this->operation = operation;
 	parse(tokens, data);
-}
-
-assignment::assignment(const assignment &copy) : parse::syntax(copy)
-{
-	value = copy.value;
-	variable = copy.variable;
-	expression = NULL;
-	if (copy.expression != NULL)
-		expression = new internal_choice(*copy.expression);
 }
 
 assignment::~assignment()
 {
-	if (expression != NULL)
-		delete expression;
-	expression = NULL;
 }
 
 void assignment::parse(tokenizer &tokens, void *data)
 {
+	string opstr[2] = {",", ":"};
 	tokens.syntax_start(this);
 
-	tokenizer::level level = tokens.increment(true);
-	tokens.expect<variable_name>();
-	tokens.expect("(");
+	tokens.increment(false);
+	tokens.expect(opstr[operation]);
 
-	if (tokens.decrement(__FILE__, __LINE__, data))
+	if (operation == CHOICE)
 	{
-		if (tokens.found<variable_name>())
-		{
-			tokens.increment(level, true);
-			tokens.expect(level, "+");
-			tokens.expect(level, "-");
+		tokens.increment(true);
+		tokens.expect<assignment>();
 
-			variable.parse(tokens, data);
+		if (tokens.decrement(__FILE__, __LINE__, data))
+			assignments.push_back(assignment(tokens, 1-operation, data));
+	}
+	else if (operation == PARALLEL)
+	{
+		tokens.increment(true);
+		tokens.expect("(");
+		tokens.expect<variable_name>();
+
+		if (tokens.decrement(__FILE__, __LINE__, data))
+		{
+			if (tokens.found("("))
+			{
+				tokens.next();
+				tokens.increment(true);
+				tokens.expect(")");
+
+				tokens.increment(true);
+				tokens.expect<assignment>();
+
+				if (tokens.decrement(__FILE__, __LINE__, data))
+					assignments.push_back(assignment(tokens, 1-operation, data));
+
+				if (tokens.decrement(__FILE__, __LINE__, data))
+					tokens.next();
+			}
+			else if (tokens.found<variable_name>())
+			{
+				literals.push_back(pair<variable_name, bool>(variable_name(tokens, data), false));
+
+				tokens.increment(true);
+				tokens.expect("+");
+				tokens.expect("-");
+
+				if (tokens.decrement(__FILE__, __LINE__, data))
+				{
+					if (tokens.found("-"))
+						literals.back().second = true;
+
+					tokens.next();
+				}
+			}
+		}
+	}
+
+	while (tokens.decrement(__FILE__, __LINE__, data))
+	{
+		tokens.next();
+
+		tokens.increment(false);
+		tokens.expect(opstr[operation]);
+
+		if (operation == CHOICE)
+		{
+			tokens.increment(true);
+			tokens.expect<assignment>();
+
+			if (tokens.decrement(__FILE__, __LINE__, data))
+				assignments.push_back(assignment(tokens, 1-operation, data));
+		}
+		else if (operation == PARALLEL)
+		{
+			tokens.increment(true);
+			tokens.expect("(");
+			tokens.expect<variable_name>();
 
 			if (tokens.decrement(__FILE__, __LINE__, data))
 			{
-				if (tokens.found("+"))
-					value = true;
-				else if (tokens.found("-"))
-					value = false;
+				if (tokens.found("("))
+				{
+					tokens.next();
+					tokens.increment(true);
+					tokens.expect(")");
 
-				tokens.next();
+					tokens.increment(true);
+					tokens.expect<assignment>();
+
+					if (tokens.decrement(__FILE__, __LINE__, data))
+						assignments.push_back(assignment(tokens, 1-operation, data));
+
+					if (tokens.decrement(__FILE__, __LINE__, data))
+						tokens.next();
+				}
+				else if (tokens.found<variable_name>())
+				{
+					literals.push_back(pair<variable_name, bool>(variable_name(tokens, data), false));
+
+					tokens.increment(true);
+					tokens.expect("+");
+					tokens.expect("-");
+
+					if (tokens.decrement(__FILE__, __LINE__, data))
+					{
+						if (tokens.found("-"))
+							literals.back().second = true;
+
+						tokens.next();
+					}
+				}
 			}
-		}
-		else if (tokens.found("("))
-		{
-			tokens.next();
-
-			tokens.increment(true);
-			tokens.expect(")");
-
-			tokens.increment(true);
-			tokens.expect<internal_choice>();
-
-			if (tokens.decrement(__FILE__, __LINE__, data))
-				expression = new internal_choice(tokens, data);
-
-			if (tokens.decrement(__FILE__, __LINE__, data))
-				tokens.next();
 		}
 	}
 
@@ -95,21 +148,7 @@ void assignment::parse(tokenizer &tokens, void *data)
 
 bool assignment::is_next(tokenizer &tokens, int i, void *data)
 {
-	while (tokens.is_next("(", i))
-		i++;
-
-	if (!variable_name::is_next(tokens, i, data))
-		return false;
-
-	while (tokens.is_next<parse::number>(i) ||
-			tokens.is_next<parse::instance>(i) ||
-			tokens.is_next("[", i) ||
-			tokens.is_next("..", i) ||
-			tokens.is_next("]", i) ||
-			tokens.is_next(".", i))
-		i++;
-
-	return (tokens.is_next("+", i) || tokens.is_next("-", i));
+	return tokens.is_next("(", i) || variable_name::is_next(tokens, i, data);
 }
 
 void assignment::register_syntax(tokenizer &tokens)
@@ -117,19 +156,111 @@ void assignment::register_syntax(tokenizer &tokens)
 	if (!tokens.syntax_registered<assignment>())
 	{
 		tokens.register_syntax<assignment>();
-		tokens.register_token<parse::instance>();
 		tokens.register_token<parse::symbol>();
 		variable_name::register_syntax(tokens);
-		internal_choice::register_syntax(tokens);
 	}
 }
 
 string assignment::to_string(string tab) const
 {
-	if (expression != NULL && expression->valid)
-		return "(" + expression->to_string(tab) + ")";
-	else
-		return variable.to_string(tab) + (value ? "+" : "-");
+	if (literals.size() == 0 && assignments.size() == 0)
+		return "1";
+
+	string opstr[2] = {",", ":"};
+
+	string result = "";
+	bool first = true;
+	for (int i = 0; i < (int)literals.size(); i++)
+	{
+		if (!first)
+			result += opstr[operation];
+
+		if (literals[i].first.valid)
+			result += literals[i].first.to_string(tab);
+		else
+			result += "null";
+
+		if (literals[i].second)
+			result += "-";
+		else
+			result += "+";
+
+		first = false;
+	}
+
+	for (int i = 0; i < (int)assignments.size(); i++)
+	{
+		if (!first)
+			result += opstr[operation];
+
+		if (operation == PARALLEL && assignments[i].operation == CHOICE)
+			result += "(";
+
+		if (assignments[i].valid)
+			result += assignments[i].to_string(tab);
+		else
+			result += "null";
+
+		if (operation == PARALLEL && assignments[i].operation == CHOICE)
+			result += ")";
+
+		first = false;
+	}
+
+	return result;
+}
+
+string assignment::to_string(int depth, string tab) const
+{
+	if (literals.size() == 0 && assignments.size() == 0)
+		return "1";
+
+	string opstr[2] = {"&", "|"};
+
+	string result = "";
+	bool first = true;
+	for (int i = 0; i < (int)literals.size(); i++)
+	{
+		if (!first)
+			result += opstr[operation];
+
+		if (literals[i].first.valid)
+			result += literals[i].first.to_string(tab);
+		else
+			result += "null";
+
+		if (literals[i].second)
+			result += "-";
+		else
+			result += "+";
+
+		first = false;
+	}
+
+	for (int i = 0; i < (int)assignments.size(); i++)
+	{
+		if (!first)
+		{
+			result += opstr[operation];
+			if (operation == CHOICE && depth > 0)
+				result += "\\n";
+		}
+
+		if (operation == PARALLEL && assignments[i].operation == CHOICE)
+			result += "(";
+
+		if (assignments[i].valid)
+			result += assignments[i].to_string(operation == CHOICE ? depth-1 : depth, tab);
+		else
+			result += "null";
+
+		if (operation == PARALLEL && assignments[i].operation == CHOICE)
+			result += ")";
+
+		first = false;
+	}
+
+	return result;
 }
 
 parse::syntax *assignment::clone() const
@@ -137,24 +268,4 @@ parse::syntax *assignment::clone() const
 	return new assignment(*this);
 }
 
-assignment &assignment::operator=(const assignment &copy)
-{
-	parse::syntax::operator=(copy);
-	value = copy.value;
-	variable = copy.variable;
-	if (copy.expression != NULL)
-	{
-		if (expression != NULL)
-			*expression = *copy.expression;
-		else
-			expression = new internal_choice(*copy.expression);
-	}
-	else if (expression != NULL)
-	{
-		delete expression;
-		expression = NULL;
-	}
-
-	return *this;
-}
 }

@@ -14,27 +14,26 @@
 
 namespace parse_boolean
 {
-struct internal_choice;
-
 struct assignment : parse::syntax
 {
 	assignment();
-	assignment(tokenizer &tokens, void *data = NULL);
-	assignment(const assignment &copy);
+	assignment(tokenizer &tokens, int operation = CHOICE, void *data = NULL);
 	~assignment();
 
-	bool value;
-	variable_name variable;
-	internal_choice *expression;
+	vector<assignment> assignments;
+	vector<pair<variable_name, bool> > literals;
+	int operation;
+
+	static const int PARALLEL = 0;
+	static const int CHOICE = 1;
 
 	void parse(tokenizer &tokens, void *data = NULL);
 	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);
 	static void register_syntax(tokenizer &tokens);
 
 	string to_string(string tab = "") const;
+	string to_string(int depth, string tab = "") const;
 	parse::syntax *clone() const;
-
-	assignment &operator=(const assignment &copy);
 };
 }
 
