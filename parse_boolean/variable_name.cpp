@@ -8,6 +8,7 @@
 #include "variable_name.h"
 #include <parse/default/instance.h>
 #include <parse/default/symbol.h>
+#include <parse/default/number.h>
 
 namespace parse_boolean
 {
@@ -32,6 +33,9 @@ void variable_name::parse(tokenizer &tokens, void *data)
 	tokens.syntax_start(this);
 
 	tokens.increment(false);
+	tokens.expect("'");
+
+	tokens.increment(false);
 	tokens.expect(".");
 
 	tokens.increment(true);
@@ -52,6 +56,17 @@ void variable_name::parse(tokenizer &tokens, void *data)
 
 		if (tokens.decrement(__FILE__, __LINE__, data))
 			names.push_back(member_name(tokens, data));
+	}
+
+	if (tokens.decrement(__FILE__, __LINE__, data))
+	{
+		tokens.next();
+
+		tokens.increment(true);
+		tokens.expect<parse::number>();
+
+		if (tokens.decrement(__FILE__, __LINE__, data))
+			region = tokens.next();
 	}
 
 	tokens.syntax_end(this);
@@ -80,6 +95,9 @@ string variable_name::to_string(string tab) const
 
 	for (int i = 1; i < (int)names.size(); i++)
 		result += "." + names[i].to_string(tab);
+
+	if (region != "0" && region != "")
+		result += "'" + region;
 	return result;
 }
 

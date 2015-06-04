@@ -21,6 +21,7 @@ struct variable_name : parse::syntax
 	~variable_name();
 
 	vector<member_name> names;
+	string region;
 
 	void parse(tokenizer &tokens, void *data = NULL);
 	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);
