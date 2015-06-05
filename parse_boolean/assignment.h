@@ -22,6 +22,7 @@ struct assignment : parse::syntax
 
 	vector<assignment> assignments;
 	vector<pair<variable_name, bool> > literals;
+	string region;
 	int operation;
 
 	static const int PARALLEL = 0;

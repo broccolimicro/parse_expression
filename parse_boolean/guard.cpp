@@ -7,6 +7,7 @@
 
 #include "guard.h"
 #include <parse/default/symbol.h>
+#include <parse/default/number.h>
 
 namespace parse_boolean
 {
@@ -72,6 +73,10 @@ void guard::parse(tokenizer &tokens, void *data)
 			if (tokens.found("("))
 			{
 				tokens.next();
+
+				tokens.increment(false);
+				tokens.expect("'");
+
 				tokens.increment(true);
 				tokens.expect(")");
 
@@ -83,6 +88,17 @@ void guard::parse(tokenizer &tokens, void *data)
 
 				if (tokens.decrement(__FILE__, __LINE__, data))
 					tokens.next();
+
+				if (tokens.decrement(__FILE__, __LINE__, data))
+				{
+					tokens.next();
+
+					tokens.increment(true);
+					tokens.expect<parse::number>();
+
+					if (tokens.decrement(__FILE__, __LINE__, data))
+						guards.back().first.region = tokens.next();
+				}
 			}
 			else if ((tokens.found("0") && invert) || (tokens.found("1") && !invert))
 			{
@@ -143,6 +159,10 @@ void guard::parse(tokenizer &tokens, void *data)
 				if (tokens.found("("))
 				{
 					tokens.next();
+
+					tokens.increment(false);
+					tokens.expect("'");
+
 					tokens.increment(true);
 					tokens.expect(")");
 
@@ -154,6 +174,17 @@ void guard::parse(tokenizer &tokens, void *data)
 
 					if (tokens.decrement(__FILE__, __LINE__, data))
 						tokens.next();
+
+					if (tokens.decrement(__FILE__, __LINE__, data))
+					{
+						tokens.next();
+
+						tokens.increment(true);
+						tokens.expect<parse::number>();
+
+						if (tokens.decrement(__FILE__, __LINE__, data))
+							guards.back().first.region = tokens.next();
+					}
 				}
 				else if ((tokens.found("0") && invert) || (tokens.found("1") && !invert))
 				{
@@ -187,6 +218,7 @@ void guard::register_syntax(tokenizer &tokens)
 	{
 		tokens.register_syntax<guard>();
 		tokens.register_token<parse::symbol>();
+		tokens.register_token<parse::number>();
 		variable_name::register_syntax(tokens);
 	}
 }

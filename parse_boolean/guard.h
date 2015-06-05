@@ -23,6 +23,7 @@ struct guard : parse::syntax
 	vector<pair<guard, bool> > guards;
 	vector<pair<variable_name, bool> > literals;
 	vector<string> constants;
+	string region;
 	int operation;
 
 	static const int AND = 0;

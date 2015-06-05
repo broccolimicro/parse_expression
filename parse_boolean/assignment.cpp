@@ -7,6 +7,7 @@
 
 #include "assignment.h"
 #include <parse/default/symbol.h>
+#include <parse/default/number.h>
 
 namespace parse_boolean
 {
@@ -54,6 +55,10 @@ void assignment::parse(tokenizer &tokens, void *data)
 			if (tokens.found("("))
 			{
 				tokens.next();
+
+				tokens.increment(false);
+				tokens.expect("'");
+
 				tokens.increment(true);
 				tokens.expect(")");
 
@@ -65,6 +70,17 @@ void assignment::parse(tokenizer &tokens, void *data)
 
 				if (tokens.decrement(__FILE__, __LINE__, data))
 					tokens.next();
+
+				if (tokens.decrement(__FILE__, __LINE__, data))
+				{
+					tokens.next();
+
+					tokens.increment(true);
+					tokens.expect<parse::number>();
+
+					if (tokens.decrement(__FILE__, __LINE__, data))
+						assignments.back().region = tokens.next();
+				}
 			}
 			else if (tokens.found<variable_name>())
 			{
@@ -111,6 +127,10 @@ void assignment::parse(tokenizer &tokens, void *data)
 				if (tokens.found("("))
 				{
 					tokens.next();
+
+					tokens.increment(false);
+					tokens.expect("'");
+
 					tokens.increment(true);
 					tokens.expect(")");
 
@@ -122,6 +142,17 @@ void assignment::parse(tokenizer &tokens, void *data)
 
 					if (tokens.decrement(__FILE__, __LINE__, data))
 						tokens.next();
+
+					if (tokens.decrement(__FILE__, __LINE__, data))
+					{
+						tokens.next();
+
+						tokens.increment(true);
+						tokens.expect<parse::number>();
+
+						if (tokens.decrement(__FILE__, __LINE__, data))
+							assignments.back().region = tokens.next();
+					}
 				}
 				else if (tokens.found<variable_name>())
 				{
@@ -157,6 +188,7 @@ void assignment::register_syntax(tokenizer &tokens)
 	{
 		tokens.register_syntax<assignment>();
 		tokens.register_token<parse::symbol>();
+		tokens.register_token<parse::number>();
 		variable_name::register_syntax(tokens);
 	}
 }
