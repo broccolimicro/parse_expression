@@ -84,7 +84,7 @@ void assignment::parse(tokenizer &tokens, void *data)
 			}
 			else if (tokens.found<variable_name>())
 			{
-				literals.push_back(pair<variable_name, bool>(variable_name(tokens, data), false));
+				literals.push_back(pair<variable_name, int>(variable_name(tokens, data), -1));
 
 				tokens.increment(true);
 				tokens.expect("+");
@@ -92,8 +92,10 @@ void assignment::parse(tokenizer &tokens, void *data)
 
 				if (tokens.decrement(__FILE__, __LINE__, data))
 				{
-					if (tokens.found("-"))
-						literals.back().second = true;
+					if (tokens.found("+"))
+						literals.back().second = 1;
+					else if (tokens.found("-"))
+						literals.back().second = 0;
 
 					tokens.next();
 				}
@@ -156,7 +158,7 @@ void assignment::parse(tokenizer &tokens, void *data)
 				}
 				else if (tokens.found<variable_name>())
 				{
-					literals.push_back(pair<variable_name, bool>(variable_name(tokens, data), false));
+					literals.push_back(pair<variable_name, int>(variable_name(tokens, data), -1));
 
 					tokens.increment(true);
 					tokens.expect("+");
@@ -164,8 +166,10 @@ void assignment::parse(tokenizer &tokens, void *data)
 
 					if (tokens.decrement(__FILE__, __LINE__, data))
 					{
-						if (tokens.found("-"))
-							literals.back().second = true;
+						if (tokens.found("+"))
+							literals.back().second = 1;
+						else if (tokens.found("-"))
+							literals.back().second = 0;
 
 						tokens.next();
 					}
@@ -212,10 +216,12 @@ string assignment::to_string(string tab) const
 		else
 			result += "null";
 
-		if (literals[i].second)
+		if (literals[i].second == 1)
+			result += "+";
+		else if (literals[i].second == 0)
 			result += "-";
 		else
-			result += "+";
+			result += "?";
 
 		first = false;
 	}
@@ -261,10 +267,12 @@ string assignment::to_string(int depth, string tab) const
 		else
 			result += "null";
 
-		if (literals[i].second)
+		if (literals[i].second == 1)
+			result += "+";
+		else if (literals[i].second == 0)
 			result += "-";
 		else
-			result += "+";
+			result += "?";
 
 		first = false;
 	}

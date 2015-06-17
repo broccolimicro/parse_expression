@@ -21,7 +21,7 @@ struct assignment : parse::syntax
 	~assignment();
 
 	vector<assignment> assignments;
-	vector<pair<variable_name, bool> > literals;
+	vector<pair<variable_name, int> > literals;
 	string region;
 	int operation;
 

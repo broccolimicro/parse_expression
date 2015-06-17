@@ -36,7 +36,7 @@ void guard::parse(tokenizer &tokens, void *data)
 	tokens.increment(false);
 	tokens.expect(opstr[operation]);
 
-	bool invert = false;
+	int sense = 1;
 
 	if (operation == AND)
 	{
@@ -48,7 +48,7 @@ void guard::parse(tokenizer &tokens, void *data)
 			tokens.next();
 			tokens.increment(false);
 			tokens.expect("~");
-			invert = !invert;
+			sense = 1-sense;
 		}
 	}
 
@@ -58,7 +58,7 @@ void guard::parse(tokenizer &tokens, void *data)
 		tokens.expect<guard>();
 
 		if (tokens.decrement(__FILE__, __LINE__, data))
-			guards.push_back(pair<guard, bool>(guard(tokens, 1-operation, data), invert));
+			guards.push_back(pair<guard, int>(guard(tokens, 1-operation, data), sense));
 	}
 	else if (operation == AND)
 	{
@@ -84,7 +84,7 @@ void guard::parse(tokenizer &tokens, void *data)
 				tokens.expect<guard>();
 
 				if (tokens.decrement(__FILE__, __LINE__, data))
-					guards.push_back(pair<guard, bool>(guard(tokens, 1-operation, data), invert));
+					guards.push_back(pair<guard, int>(guard(tokens, 1-operation, data), sense));
 
 				if (tokens.decrement(__FILE__, __LINE__, data))
 					tokens.next();
@@ -100,22 +100,22 @@ void guard::parse(tokenizer &tokens, void *data)
 						guards.back().first.region = tokens.next();
 				}
 			}
-			else if ((tokens.found("0") && invert) || (tokens.found("1") && !invert))
+			else if ((tokens.found("0") && sense == 0) || (tokens.found("1") && sense == 1))
 			{
 				tokens.next();
 				constants.push_back("1");
 			}
-			else if ((tokens.found("1") && invert) || (tokens.found("0") && !invert))
+			else if ((tokens.found("1") && sense == 0) || (tokens.found("0") && sense == 1))
 			{
 				tokens.next();
 				constants.push_back("0");
 			}
 			else if (tokens.found<variable_name>())
-				literals.push_back(pair<variable_name, bool>(variable_name(tokens, data), invert));
+				literals.push_back(pair<variable_name, int>(variable_name(tokens, data), sense));
 		}
 	}
 
-	invert = false;
+	sense = 1;
 
 	while (tokens.decrement(__FILE__, __LINE__, data))
 	{
@@ -134,7 +134,7 @@ void guard::parse(tokenizer &tokens, void *data)
 				tokens.next();
 				tokens.increment(false);
 				tokens.expect("~");
-				invert = !invert;
+				sense = 1-sense;
 			}
 		}
 
@@ -144,7 +144,7 @@ void guard::parse(tokenizer &tokens, void *data)
 			tokens.expect<guard>();
 
 			if (tokens.decrement(__FILE__, __LINE__, data))
-				guards.push_back(pair<guard, bool>(guard(tokens, 1-operation, data), invert));
+				guards.push_back(pair<guard, int>(guard(tokens, 1-operation, data), sense));
 		}
 		else if (operation == AND)
 		{
@@ -170,7 +170,7 @@ void guard::parse(tokenizer &tokens, void *data)
 					tokens.expect<guard>();
 
 					if (tokens.decrement(__FILE__, __LINE__, data))
-						guards.push_back(pair<guard, bool>(guard(tokens, 1-operation, data), invert));
+						guards.push_back(pair<guard, int>(guard(tokens, 1-operation, data), sense));
 
 					if (tokens.decrement(__FILE__, __LINE__, data))
 						tokens.next();
@@ -186,22 +186,22 @@ void guard::parse(tokenizer &tokens, void *data)
 							guards.back().first.region = tokens.next();
 					}
 				}
-				else if ((tokens.found("0") && invert) || (tokens.found("1") && !invert))
+				else if ((tokens.found("0") && sense == 0) || (tokens.found("1") && sense == 1))
 				{
 					tokens.next();
 					constants.push_back("1");
 				}
-				else if ((tokens.found("1") && invert) || (tokens.found("0") && !invert))
+				else if ((tokens.found("1") && sense == 0) || (tokens.found("0") && sense == 1))
 				{
 					tokens.next();
 					constants.push_back("0");
 				}
 				else if (tokens.found<variable_name>())
-					literals.push_back(pair<variable_name, bool>(variable_name(tokens, data), invert));
+					literals.push_back(pair<variable_name, int>(variable_name(tokens, data), sense));
 			}
 		}
 
-		invert = false;
+		sense = 1;
 	}
 
 	tokens.syntax_end(this);
@@ -247,8 +247,10 @@ string guard::to_string(string tab) const
 			if (!first)
 				result += opstr[operation];
 
-			if (literals[i].second)
+			if (literals[i].second == 0)
 				result += "~";
+			else if (literals[i].second == -1)
+				result += "?";
 
 			if (literals[i].first.valid)
 				result += literals[i].first.to_string(tab);
@@ -263,10 +265,12 @@ string guard::to_string(string tab) const
 			if (!first)
 				result += opstr[operation];
 
-			if (guards[i].second)
+			if (guards[i].second == 0)
 				result += "~";
+			else if (guards[i].second == -1)
+				result += "?";
 
-			if (guards[i].second || (operation == AND && guards[i].first.operation == OR))
+			if (guards[i].second != 1 || (operation == AND && guards[i].first.operation == OR))
 				result += "(";
 
 			if (guards[i].first.valid)
@@ -274,7 +278,7 @@ string guard::to_string(string tab) const
 			else
 				result += "null";
 
-			if (guards[i].second || (operation == AND && guards[i].first.operation == OR))
+			if (guards[i].second != 1 || (operation == AND && guards[i].first.operation == OR))
 				result += ")";
 
 			first = false;
@@ -308,8 +312,10 @@ string guard::to_string(int depth, string tab) const
 			if (!first)
 				result += opstr[operation];
 
-			if (literals[i].second)
+			if (literals[i].second == 0)
 				result += "~";
+			else if (literals[i].second == -1)
+				result += "?";
 
 			if (literals[i].first.valid)
 				result += literals[i].first.to_string(tab);
@@ -328,10 +334,12 @@ string guard::to_string(int depth, string tab) const
 					result += "\\n";
 			}
 
-			if (guards[i].second)
+			if (guards[i].second == 0)
 				result += "~";
+			else if (guards[i].second == -1)
+				result += "?";
 
-			if (guards[i].second || (operation == AND && guards[i].first.operation == OR))
+			if (guards[i].second != 1 || (operation == AND && guards[i].first.operation == OR))
 				result += "(";
 
 			if (guards[i].first.valid)
@@ -339,7 +347,7 @@ string guard::to_string(int depth, string tab) const
 			else
 				result += "null";
 
-			if (guards[i].second || (operation == AND && guards[i].first.operation == OR))
+			if (guards[i].second != 1 || (operation == AND && guards[i].first.operation == OR))
 				result += ")";
 
 			first = false;

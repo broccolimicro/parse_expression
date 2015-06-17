@@ -20,8 +20,8 @@ struct guard : parse::syntax
 	guard(tokenizer &tokens, int operation = OR, void *data = NULL);
 	~guard();
 
-	vector<pair<guard, bool> > guards;
-	vector<pair<variable_name, bool> > literals;
+	vector<pair<guard, int> > guards;
+	vector<pair<variable_name, int> > literals;
 	vector<string> constants;
 	string region;
 	int operation;
