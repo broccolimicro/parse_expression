@@ -1,5 +1,5 @@
 /*
- * guard.h
+ * assignment.h
  *
  *  Created on: Jan 18, 2015
  *      Author: nbingham
@@ -7,27 +7,26 @@
 
 #include <parse/parse.h>
 #include <parse/syntax.h>
-#include "variable_name.h"
+#include <parse_ucs/variable_name.h>
+#include "expression.h"
 
-#ifndef parse_boolean_guard_h
-#define parse_boolean_guard_h
+#ifndef parse_expression_assignment_h
+#define parse_expression_assignment_h
 
-namespace parse_boolean
+namespace parse_expression
 {
-struct guard : parse::syntax
-{
-	guard();
-	guard(tokenizer &tokens, int operation = OR, void *data = NULL);
-	~guard();
+using parse_ucs::variable_name;
 
-	vector<pair<guard, int> > guards;
-	vector<pair<variable_name, int> > literals;
-	vector<string> constants;
+struct assignment : parse::syntax
+{
+	assignment();
+	assignment(tokenizer &tokens, void *data = NULL);
+	~assignment();
+
+	vector<variable_name> names;
+	vector<expression> expressions;
+	string operation;
 	string region;
-	int operation;
-
-	static const int AND = 0;
-	static const int OR = 1;
 
 	void parse(tokenizer &tokens, void *data = NULL);
 	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);

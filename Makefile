@@ -1,5 +1,5 @@
-SRCDIR       =  parse_boolean
-CXXFLAGS	 =  -O2 -g -Wall -fmessage-length=0 -I../parse -I../common
+SRCDIR       =  parse_expression
+CXXFLAGS	 =  -O2 -g -Wall -fmessage-length=0 -I../parse_ucs -I../parse -I../common
 SOURCES	    :=  $(shell find $(SRCDIR) -name '*.cpp')
 OBJECTS	    :=  $(SOURCES:%.cpp=%.o)
 LDFLAGS		 =  
