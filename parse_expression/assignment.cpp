@@ -35,6 +35,7 @@ void assignment::parse(tokenizer &tokens, void *data)
 	tokens.expect(":=");
 	tokens.expect("+");
 	tokens.expect("-");
+	tokens.expect("~");
 	tokens.expect("?");
 	tokens.expect("!");
 
@@ -133,7 +134,7 @@ string assignment::to_string(string tab) const
 	{
 		result += names[0].to_string(tab);
 
-		if (operation == "+" || operation == "-")
+		if (operation == "+" || operation == "-" || operation == "~")
 			result += operation;
 		else if (operation == ":=" && expressions.size() > 0)
 			result += ":=" + expressions[0].to_string(tab);
