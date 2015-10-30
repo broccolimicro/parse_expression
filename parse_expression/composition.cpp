@@ -8,6 +8,7 @@
 #include "composition.h"
 #include <parse/default/symbol.h>
 #include <parse/default/number.h>
+#include <parse/default/white_space.h>
 
 namespace parse_expression
 {
@@ -150,6 +151,7 @@ void composition::register_syntax(tokenizer &tokens)
 		tokens.register_syntax<composition>();
 		tokens.register_token<parse::symbol>();
 		tokens.register_token<parse::number>();
+		tokens.register_token<parse::white_space>(false);
 		assignment::register_syntax(tokens);
 		expression::register_syntax(tokens);
 	}

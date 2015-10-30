@@ -9,6 +9,7 @@
 #include <parse/default/symbol.h>
 #include <parse/default/number.h>
 #include <parse/default/instance.h>
+#include <parse/default/white_space.h>
 
 namespace parse_expression
 {
@@ -306,6 +307,7 @@ void expression::register_syntax(tokenizer &tokens)
 		tokens.register_token<parse::symbol>();
 		tokens.register_token<parse::number>();
 		tokens.register_token<parse::instance>();
+		tokens.register_token<parse::white_space>(false);
 		variable_name::register_syntax(tokens);
 	}
 }

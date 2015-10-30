@@ -8,6 +8,8 @@
 #include "assignment.h"
 #include <parse/default/symbol.h>
 #include <parse/default/number.h>
+#include <parse/default/white_space.h>
+#include <parse/default/instance.h>
 
 namespace parse_expression
 {
@@ -31,7 +33,7 @@ void assignment::parse(tokenizer &tokens, void *data)
 {
 	tokens.syntax_start(this);
 
-	tokens.increment(true);
+	tokens.increment(false);
 	tokens.expect(":=");
 	tokens.expect("+");
 	tokens.expect("-");
@@ -116,6 +118,8 @@ void assignment::register_syntax(tokenizer &tokens)
 		tokens.register_syntax<assignment>();
 		tokens.register_token<parse::symbol>();
 		tokens.register_token<parse::number>();
+		tokens.register_token<parse::instance>();
+		tokens.register_token<parse::white_space>(false);
 		variable_name::register_syntax(tokens);
 		expression::register_syntax(tokens);
 	}
@@ -166,7 +170,7 @@ string assignment::to_string(string tab) const
 					result += names[1].to_string(tab);
 			}
 		}
-		else
+		else if (operation == "~")
 			result += "~";
 	}
 
