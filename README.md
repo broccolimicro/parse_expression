@@ -1,4 +1,4 @@
-# libparse_boolean
+# parse_expression
 
 This library provides a parser for boolean expressions, either represented as an 
 expression with operators &, |, and ~ or as an assignment with operators + or -.
@@ -23,3 +23,14 @@ slice: '[' number [ '..' number ] ']'
 
  - parse
    - common
+
+## License
+
+This project is part of the Haystack synthesis engine.
+
+Licensed by Cornell University under the MIT License.
+
+Written by Ned Bingham.
+Copyright © 2020 Cornell University.
+
+A copy of the MIT License may be found in COPYRIGHT.
