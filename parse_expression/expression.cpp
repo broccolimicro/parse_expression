@@ -68,12 +68,16 @@ void expression::init()
 		precedence.push_back(operation_set(operation_set::binary));
 		precedence.back().symbols.push_back("==");
 		precedence.back().symbols.push_back("~=");
-
-		precedence.push_back(operation_set(operation_set::binary));
 		precedence.back().symbols.push_back("<");
 		precedence.back().symbols.push_back(">");
 		precedence.back().symbols.push_back("<=");
 		precedence.back().symbols.push_back(">=");
+
+		precedence.push_back(operation_set(operation_set::binary));
+		precedence.back().symbols.push_back("||");
+		
+		precedence.push_back(operation_set(operation_set::binary));
+		precedence.back().symbols.push_back("&&");
 
 		precedence.push_back(operation_set(operation_set::binary));
 		precedence.back().symbols.push_back("<<");
@@ -89,6 +93,7 @@ void expression::init()
 		precedence.back().symbols.push_back("%");
 
 		precedence.push_back(operation_set(operation_set::left_unary));
+		precedence.back().symbols.push_back("!");
 		precedence.back().symbols.push_back("~");
 		precedence.back().symbols.push_back("+");
 		precedence.back().symbols.push_back("-");
@@ -133,7 +138,8 @@ void expression::parse(tokenizer &tokens, void *data)
 		{
 			tokens.expect<variable_name>();
 			tokens.expect<parse::number>();
-			tokens.expect("null");
+			tokens.expect("gnd");
+			tokens.expect("vdd");
 			tokens.expect("(");
 		}
 
@@ -161,7 +167,7 @@ void expression::parse(tokenizer &tokens, void *data)
 				arguments.push_back(argument(variable_name(tokens, data)));
 			else if (tokens.found<parse::number>())
 				arguments.push_back(argument(tokens.next()));
-			else if (tokens.found("null"))
+			else if (tokens.found("gnd") or tokens.found("vdd"))
 				arguments.push_back(argument(tokens.next()));
 			else if (tokens.found("("))
 			{
@@ -232,7 +238,8 @@ void expression::parse(tokenizer &tokens, void *data)
 			{
 				tokens.expect<variable_name>();
 				tokens.expect<parse::number>();
-				tokens.expect("null");
+				tokens.expect("gnd");
+				tokens.expect("vdd");
 				tokens.expect("(");
 			}
 
@@ -244,7 +251,9 @@ void expression::parse(tokenizer &tokens, void *data)
 					arguments.push_back(argument(variable_name(tokens, data)));
 				else if (tokens.found<parse::number>())
 					arguments.push_back(argument(tokens.next()));
-				else if (tokens.found("null"))
+				else if (tokens.found("gnd"))
+					arguments.push_back(argument(tokens.next()));
+				else if (tokens.found("vdd"))
 					arguments.push_back(argument(tokens.next()));
 				else if (tokens.found("("))
 				{
@@ -320,7 +329,7 @@ string expression::to_string(string tab) const
 string expression::to_string(int prev_level, string tab) const
 {
 	if (!valid || arguments.size() == 0)
-		return "null";
+		return "gnd";
 
 	string result = "";
 	bool paren = prev_level > level && operations.size() > 0;
@@ -400,7 +409,7 @@ string argument::to_string(int level, string tab) const
 	else if (constant != "")
 		return constant;
 	else
-		return "0";
+		return "vdd";
 }
 
 }
