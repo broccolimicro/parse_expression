@@ -1,16 +1,8 @@
-/*
- * expression.h
- *
- *  Created on: Jan 18, 2015
- *      Author: nbingham
- */
+#pragma once
 
 #include <parse/parse.h>
 #include <parse/syntax.h>
 #include <parse_ucs/variable_name.h>
-
-#ifndef parse_expression_expression_h
-#define parse_expression_expression_h
 
 namespace parse_expression
 {
@@ -76,6 +68,6 @@ struct argument
 
 	string to_string(int level = -1, string tab = "") const;
 };
+
 }
 
-#endif
