@@ -95,6 +95,7 @@ void expression::init()
 		precedence.push_back(operation_set(operation_set::left_unary));
 		precedence.back().symbols.push_back("!");
 		precedence.back().symbols.push_back("~");
+		precedence.back().symbols.push_back("?");
 		precedence.back().symbols.push_back("+");
 		precedence.back().symbols.push_back("-");
 
