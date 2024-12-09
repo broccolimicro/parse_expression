@@ -108,7 +108,7 @@ void assignment::parse(tokenizer &tokens, void *data)
 
 bool assignment::is_next(tokenizer &tokens, int i, void *data)
 {
-	return variable_name::is_next(tokens, i, data);
+	return not tokens.is_next("while") and not tokens.is_next("await") and variable_name::is_next(tokens, i, data);
 }
 
 void assignment::register_syntax(tokenizer &tokens)
