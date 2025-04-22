@@ -54,8 +54,11 @@ expression::~expression()
 
 void expression::init()
 {
-	if (precedence.size() == 0)
-	{
+	if (precedence.size() == 0) {
+		precedence.push_back(operation_set(operation_set::ternary));
+		precedence.back().symbols.push_back("?");
+		precedence.back().symbols.push_back(":");
+
 		precedence.push_back(operation_set(operation_set::binary));
 		precedence.back().symbols.push_back("|");
 
@@ -98,12 +101,9 @@ void expression::init()
 		precedence.back().symbols.push_back("?");
 		precedence.back().symbols.push_back("+");
 		precedence.back().symbols.push_back("-");
-
-		precedence.push_back(operation_set(operation_set::left_unary));
-		precedence.back().symbols.push_back("#");
-
-		precedence.push_back(operation_set(operation_set::right_unary));
-		precedence.back().symbols.push_back("?");
+		
+		precedence.push_back(operation_set(operation_set::call));
+		precedence.back().symbols.push_back(",");
 	}
 }
 
@@ -126,12 +126,48 @@ bool expression::level_has(int level, string operation)
 	return false;
 }
 
-void expression::parse(tokenizer &tokens, void *data)
-{
+void expression::readLiteral(tokenizer &tokens, void *data) {
+	if (tokens.found<variable_name>())
+		arguments.push_back(argument(variable_name(tokens, data)));
+	else if (tokens.found<parse::number>())
+		arguments.push_back(argument(tokens.next()));
+	else if (tokens.found("gnd") or tokens.found("vdd"))
+		arguments.push_back(argument(tokens.next()));
+	else if (tokens.found("(")) {
+		tokens.next();
+
+		tokens.increment(false);
+		tokens.expect("'");
+
+		tokens.increment(true);
+		tokens.expect(")");
+
+		tokens.increment(true);
+		tokens.expect<expression>();
+
+		if (tokens.decrement(__FILE__, __LINE__, NULL))
+			arguments.push_back(argument(expression(tokens, 0, data)));
+
+		if (tokens.decrement(__FILE__, __LINE__, data))
+			tokens.next();
+
+		if (tokens.decrement(__FILE__, __LINE__, data))
+		{
+			tokens.next();
+
+			tokens.increment(true);
+			tokens.expect<parse::number>();
+
+			if (tokens.decrement(__FILE__, __LINE__, data))
+				region = tokens.next();
+		}
+	}
+}
+
+void expression::parse(tokenizer &tokens, void *data) {
 	tokens.syntax_start(this);
 
-	if (precedence[level].type < operation_set::binary)
-	{
+	if (precedence[level].type < operation_set::binary) {
 		tokens.increment(true);
 		if (level < (int)precedence.size()-1)
 			tokens.expect<expression>();
@@ -160,45 +196,11 @@ void expression::parse(tokenizer &tokens, void *data)
 			} while (tokens.decrement(__FILE__, __LINE__, data));
 		}
 
-		if (tokens.decrement(__FILE__, __LINE__, &level))
-		{
-			if (tokens.found<expression>())
+		if (tokens.decrement(__FILE__, __LINE__, &level)) {
+			if (tokens.found<expression>()) {
 				arguments.push_back(argument(expression(tokens, level+1, data)));
-			else if (tokens.found<variable_name>())
-				arguments.push_back(argument(variable_name(tokens, data)));
-			else if (tokens.found<parse::number>())
-				arguments.push_back(argument(tokens.next()));
-			else if (tokens.found("gnd") or tokens.found("vdd"))
-				arguments.push_back(argument(tokens.next()));
-			else if (tokens.found("("))
-			{
-				tokens.next();
-
-				tokens.increment(false);
-				tokens.expect("'");
-
-				tokens.increment(true);
-				tokens.expect(")");
-
-				tokens.increment(true);
-				tokens.expect<expression>();
-
-				if (tokens.decrement(__FILE__, __LINE__, NULL))
-					arguments.push_back(argument(expression(tokens, 0, data)));
-
-				if (tokens.decrement(__FILE__, __LINE__, data))
-					tokens.next();
-
-				if (tokens.decrement(__FILE__, __LINE__, data))
-				{
-					tokens.next();
-
-					tokens.increment(true);
-					tokens.expect<parse::number>();
-
-					if (tokens.decrement(__FILE__, __LINE__, data))
-						region = tokens.next();
-				}
+			} else {
+				readLiteral(tokens, data);
 			}
 		}
 
@@ -217,9 +219,7 @@ void expression::parse(tokenizer &tokens, void *data)
 						tokens.expect(precedence[level].symbols[i]);
 			} while (tokens.decrement(__FILE__, __LINE__, data));
 		}
-	}
-	if (precedence[level].type == operation_set::binary)
-	{
+	} else if (precedence[level].type == operation_set::binary) {
 		bool first = true;
 		do
 		{
@@ -233,10 +233,9 @@ void expression::parse(tokenizer &tokens, void *data)
 				tokens.expect(precedence[level].symbols[i]);
 
 			tokens.increment(true);
-			if (level < (int)precedence.size()-1)
+			if (level < (int)precedence.size()-1) {
 				tokens.expect<expression>();
-			else
-			{
+			} else {
 				tokens.expect<variable_name>();
 				tokens.expect<parse::number>();
 				tokens.expect("gnd");
@@ -244,51 +243,123 @@ void expression::parse(tokenizer &tokens, void *data)
 				tokens.expect("(");
 			}
 
-			if (tokens.decrement(__FILE__, __LINE__, &level))
-			{
-				if (tokens.found<expression>())
+			if (tokens.decrement(__FILE__, __LINE__, &level)) {
+				if (tokens.found<expression>()) {
 					arguments.push_back(argument(expression(tokens, level+1, data)));
-				else if (tokens.found<variable_name>())
-					arguments.push_back(argument(variable_name(tokens, data)));
-				else if (tokens.found<parse::number>())
-					arguments.push_back(argument(tokens.next()));
-				else if (tokens.found("gnd"))
-					arguments.push_back(argument(tokens.next()));
-				else if (tokens.found("vdd"))
-					arguments.push_back(argument(tokens.next()));
-				else if (tokens.found("("))
-				{
-					tokens.next();
+				} else {
+					readLiteral(tokens, data);
+				}
+			}
+		} while (tokens.decrement(__FILE__, __LINE__, data));
+	} else if (precedence[level].type == operation_set::ternary) {
+		if (not precedence[level].symbols.empty()) {
+			tokens.increment(false);
+			tokens.expect(precedence[level].symbols[0]);
+		}
 
+		tokens.increment(true);
+		if (level < (int)precedence.size()-1) {
+			tokens.expect<expression>();
+		} else {
+			tokens.expect<variable_name>();
+			tokens.expect<parse::number>();
+			tokens.expect("gnd");
+			tokens.expect("vdd");
+			tokens.expect("(");
+		}
+
+		if (tokens.decrement(__FILE__, __LINE__, &level)) {
+			if (tokens.found<expression>()) {
+				arguments.push_back(argument(expression(tokens, level+1, data)));
+			} else {
+				readLiteral(tokens, data);
+			}
+		}
+	
+		while (operations.size() < precedence[level].symbols.size()
+			and tokens.decrement(__FILE__, __LINE__, data)) {
+			operations.push_back(tokens.next());
+			
+			if (operations.size() < precedence[level].symbols.size()) {
+				tokens.increment(true);
+				tokens.expect(precedence[level].symbols[operations.size()]);
+			}
+
+			tokens.increment(true);
+			if (level < (int)precedence.size()-1) {
+				tokens.expect<expression>();
+			} else {
+				tokens.expect<variable_name>();
+				tokens.expect<parse::number>();
+				tokens.expect("gnd");
+				tokens.expect("vdd");
+				tokens.expect("(");
+			}
+
+			if (tokens.decrement(__FILE__, __LINE__, &level)) {
+				if (tokens.found<expression>()) {
+					arguments.push_back(argument(expression(tokens, level+1, data)));
+				} else {
+					readLiteral(tokens, data);
+				}
+			}
+		}
+	} else if (precedence[level].type == operation_set::call) {
+		tokens.increment(false);
+		tokens.expect("(");
+
+		tokens.increment(true);
+		if (level < (int)precedence.size()-1) {
+			tokens.expect<expression>();
+		} else {
+			tokens.expect<variable_name>();
+			tokens.expect<parse::number>();
+			tokens.expect("gnd");
+			tokens.expect("vdd");
+			tokens.expect("(");
+		}
+
+		if (tokens.decrement(__FILE__, __LINE__, &level)) {
+			if (tokens.found<expression>()) {
+				arguments.push_back(argument(expression(tokens, level+1, data)));
+			} else {
+				readLiteral(tokens, data);
+			}
+		}
+
+		if (tokens.decrement(__FILE__, __LINE__, data)) {
+			operations.push_back(tokens.next());
+
+			tokens.increment(true);
+			tokens.expect(")");
+
+			tokens.increment(false);
+			tokens.expect<expression>();
+
+			if (tokens.decrement(__FILE__, __LINE__, data)) {
+				arguments.push_back(argument(expression(tokens, 0, data)));
+				tokens.increment(false);
+				tokens.expect(",");
+
+				while (tokens.decrement(__FILE__, __LINE__, data)) {
+					operations.push_back(tokens.next());
+					
 					tokens.increment(false);
-					tokens.expect("'");
-
-					tokens.increment(true);
-					tokens.expect(")");
+					tokens.expect(",");
 
 					tokens.increment(true);
 					tokens.expect<expression>();
 
-					if (tokens.decrement(__FILE__, __LINE__, NULL))
+					if (tokens.decrement(__FILE__, __LINE__, data)) {
 						arguments.push_back(argument(expression(tokens, 0, data)));
-
-					if (tokens.decrement(__FILE__, __LINE__, data))
-						tokens.next();
-
-					if (tokens.decrement(__FILE__, __LINE__, data))
-					{
-						tokens.next();
-
-						tokens.increment(true);
-						tokens.expect<parse::number>();
-
-						if (tokens.decrement(__FILE__, __LINE__, data))
-							region = tokens.next();
 					}
 				}
 			}
 
-		} while (tokens.decrement(__FILE__, __LINE__, data));
+			if (tokens.decrement(__FILE__, __LINE__, data)) {
+				operations.push_back(tokens.next());
+			}
+		}
 	}
 
 	tokens.syntax_end(this);
@@ -300,11 +371,27 @@ bool expression::is_next(tokenizer &tokens, int i, void *data)
 	if (data != NULL)
 		level = *(int*)data;
 
-	bool result = tokens.is_next("(", i) || tokens.is_next<parse::number>(i) || variable_name::is_next(tokens, i, data);
-	for (int j = level+1; j < (int)precedence.size(); j++)
-		if (precedence[j].type == operation_set::left_unary)
-			for (int k = 0; k < (int)precedence[j].symbols.size(); k++)
-				result = result || tokens.is_next(precedence[j].symbols[k], i);
+	bool result = (tokens.is_next("(", i)
+		or tokens.is_next<parse::number>(i)
+		or variable_name::is_next(tokens, i, data));
+
+	for (int j = level+1; j < (int)precedence.size(); j++) {
+		if (precedence[j].type == operation_set::left_unary) {
+			for (int k = 0; k < (int)precedence[j].symbols.size(); k++) {
+				result = result or tokens.is_next(precedence[j].symbols[k], i);
+			}
+		}
+	}
+
+	result = result
+		and not tokens.is_next("func", i)
+		and not tokens.is_next("struct", i)
+		and not tokens.is_next("interface", i)
+		and not tokens.is_next("context", i)
+		and not tokens.is_next("await", i) 
+		and not tokens.is_next("while", i)
+		and not tokens.is_next("region", i)
+		and not tokens.is_next("assume", i);
 
 	return result;
 }
@@ -329,40 +416,47 @@ string expression::to_string(string tab) const
 
 string expression::to_string(int prev_level, string tab) const
 {
-	if (!valid || arguments.size() == 0)
+	if (!valid or arguments.size() == 0)
 		return "gnd";
 
 	string result = "";
-	bool paren = prev_level > level && operations.size() > 0;
-	if (paren || region != "")
+	bool paren = prev_level > level;
+	if (paren or region != "") {
 		result += "(";
+	}
 
-	if (level >= 0 && precedence[level].type == operation_set::left_unary)
-	{
-		for (int i = 0; i < (int)operations.size(); i++)
+	if (level >= 0 and precedence[level].type == operation_set::left_unary) {
+		for (int i = 0; i < (int)operations.size(); i++) {
 			result += operations[i];
+		}
 
 		result += arguments[0].to_string(level, tab);
-	}
-	else if (level >= 0 && precedence[level].type == operation_set::right_unary)
-	{
+	} else if (level >= 0 and precedence[level].type == operation_set::right_unary) {
 		result += arguments[0].to_string(level, tab);
 
-		for (int i = 0; i < (int)operations.size(); i++)
+		for (int i = 0; i < (int)operations.size(); i++) {
 			result += operations[i];
-	}
-	else
-	{
-		for (int i = 0; i < (int)arguments.size() && i-1 < (int)operations.size(); i++)
-		{
-			if (i != 0)
+		}
+	} else if (level >= 0 and (
+		precedence[level].type == operation_set::binary
+		or precedence[level].type == operation_set::ternary)) {
+		for (int i = 0; i < (int)arguments.size() and i-1 < (int)operations.size(); i++) {
+			if (i != 0) {
 				result += operations[i-1];
+			}
 
 			result += arguments[i].to_string(level, tab);
 		}
+	} else if (level >= 0 and precedence[level].type == operation_set::call) {
+		for (int i = 0; i < (int)arguments.size(); i++) {
+			result += arguments[i].to_string((i == 0 ? level : -1), tab);
+			if (i < (int)operations.size()) {
+				result += operations[i];
+			}
+		}
 	}
 
-	if (paren || region != "")
+	if (paren or region != "")
 		result += ")";
 
 	if (region != "")
@@ -405,9 +499,9 @@ string argument::to_string(int level, string tab) const
 {
 	if (sub.valid)
 		return sub.to_string(level, tab);
-	else if (literal.valid)
+	else if (literal.valid) {
 		return literal.to_string(tab);
-	else if (constant != "")
+	} else if (constant != "")
 		return constant;
 	else
 		return "vdd";

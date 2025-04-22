@@ -10,6 +10,7 @@
 #include <parse/default/number.h>
 #include <parse/default/white_space.h>
 #include <parse/default/instance.h>
+#include <parse/default/new_line.h>
 
 namespace parse_expression
 {
@@ -140,7 +141,16 @@ void assignment::parse(tokenizer &tokens, void *data)
 
 bool assignment::is_next(tokenizer &tokens, int i, void *data)
 {
-	return not tokens.is_next("while") and not tokens.is_next("await") and not tokens.is_next("region") and not tokens.is_next("assume") and variable_name::is_next(tokens, i, data);
+	return variable_name::is_next(tokens, i, data)
+		and not tokens.is_next<parse::instance>(i+1)
+		and not tokens.is_next("func", i)
+		and not tokens.is_next("struct", i)
+		and not tokens.is_next("interface", i)
+		and not tokens.is_next("context", i)
+		and not tokens.is_next("await", i) 
+		and not tokens.is_next("while", i)
+		and not tokens.is_next("region", i)
+		and not tokens.is_next("assume", i);
 }
 
 void assignment::register_syntax(tokenizer &tokens)
