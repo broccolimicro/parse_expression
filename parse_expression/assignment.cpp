@@ -40,8 +40,6 @@ void assignment::parse(tokenizer &tokens, void *data)
 	tokens.expect("-");
 	tokens.expect("~");
 	tokens.expect("(");
-	tokens.expect("?");
-	tokens.expect("!");
 
 	tokens.increment(true);
 	tokens.expect<variable_name>();
@@ -60,48 +58,6 @@ void assignment::parse(tokenizer &tokens, void *data)
 
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			expressions.push_back(expression(tokens, 0, data));
-		}
-	} else if (operation == "?") {
-		tokens.increment(false);
-		tokens.expect("!");
-
-		tokens.increment(false);
-		tokens.expect<variable_name>();
-
-		if (tokens.decrement(__FILE__, __LINE__, data)) {
-			names.push_back(variable_name(tokens, data));
-		}
-
-		if (tokens.decrement(__FILE__, __LINE__, data)) {
-			operation += tokens.next();
-
-			tokens.increment(false);
-			tokens.expect<expression>();
-
-			if (tokens.decrement(__FILE__, __LINE__, data)) {
-				expressions.push_back(expression(tokens, 0, data));
-			}
-		}
-	} else if (operation == "!") {
-		tokens.increment(false);
-		tokens.expect("?");
-
-		tokens.increment(false);
-		tokens.expect<expression>();
-
-		if (tokens.decrement(__FILE__, __LINE__, data)) {
-			expressions.push_back(expression(tokens, 0, data));
-		}
-
-		if (tokens.decrement(__FILE__, __LINE__, data)) {
-			operation += tokens.next();
-
-			tokens.increment(false);
-			tokens.expect<variable_name>();
-
-			if (tokens.decrement(__FILE__, __LINE__, data)) {
-				names.push_back(variable_name(tokens, data));
-			}
 		}
 	} else if (operation == "(") {
 		tokens.increment(true);
@@ -186,28 +142,6 @@ string assignment::to_string(string tab) const
 			result += "=" + expressions[0].to_string(tab);
 		} else if (operation == "=" && expressions.size() == 0) {
 			return "skip";
-		} else if (operation == "?" || operation == "?!") {
-			result += "?";
-			if (names.size() > 1) {
-				result += names[1].to_string(tab);
-			}
-
-			if (operation == "?!") {
-				result += "!";
-				if (expressions.size() > 0)
-					result += expressions[0].to_string(tab);
-			}
-		} else if (operation == "!" || operation == "!?") {
-			result += "!";
-			if (expressions.size() > 0) {
-				result += expressions[0].to_string(tab);
-			}
-
-			if (operation == "!?") {
-				result += "?";
-				if (names.size() > 1)
-					result += names[1].to_string(tab);
-			}
 		} else if (operation == "(") {
 			result += "(";
 			for (auto i = expressions.begin(); i != expressions.end(); i++) {
