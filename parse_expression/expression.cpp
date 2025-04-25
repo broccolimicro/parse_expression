@@ -103,25 +103,32 @@ void expression::init()
 		precedence.back().symbols.push_back("-");
 		
 		precedence.push_back(operation_set(operation_set::call));
+		precedence.back().symbols.push_back("(");
 		precedence.back().symbols.push_back(",");
+		precedence.back().symbols.push_back(")");
 	}
 }
 
-int expression::get_level(string operation)
-{
+int expression::get_level(string operation) {
 	for (int i = 0; i < (int)precedence.size(); i++)
-		for (int j = 0; j < (int)precedence[i].symbols.size(); j++)
-			if (precedence[i].symbols[j] == operation)
-				return i;
+		if (level_has(i, operaton)) {
+			return i;
+		}
+	}
 
 	return precedence.size();
 }
 
-bool expression::level_has(int level, string operation)
-{
-	for (int j = 0; j < (int)precedence[level].symbols.size(); j++)
-		if (precedence[level].symbols[j] == operation)
+bool expression::level_has(int level, string operation) {
+	if (precendence[level].type == operation_set::call) {
+		return precedence[level].symbols[0] == operation;
+	}
+
+	for (int j = 0; j < (int)precedence[level].symbols.size(); j++) {
+		if (precedence[level].symbols[j] == operation) {
 			return true;
+		}
+	}
 
 	return false;
 }
@@ -306,7 +313,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 		}
 	} else if (precedence[level].type == operation_set::call) {
 		tokens.increment(false);
-		tokens.expect("(");
+		tokens.expect(precedence[level].symbols[0]);
 
 		tokens.increment(true);
 		if (level < (int)precedence.size()-1) {
@@ -331,7 +338,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 			operations.push_back(tokens.next());
 
 			tokens.increment(true);
-			tokens.expect(")");
+			tokens.expect(precedence[level].symbols[2]);
 
 			tokens.increment(false);
 			tokens.expect<expression>();
@@ -339,13 +346,13 @@ void expression::parse(tokenizer &tokens, void *data) {
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
 				arguments.push_back(argument(expression(tokens, 0, data)));
 				tokens.increment(false);
-				tokens.expect(",");
+				tokens.expect(precedence[level].symbols[1]);
 
 				while (tokens.decrement(__FILE__, __LINE__, data)) {
 					operations.push_back(tokens.next());
 					
 					tokens.increment(false);
-					tokens.expect(",");
+					tokens.expect(precedence[level].symbols[1]);
 
 					tokens.increment(true);
 					tokens.expect<expression>();
@@ -448,11 +455,16 @@ string expression::to_string(int prev_level, string tab) const
 			result += arguments[i].to_string(level, tab);
 		}
 	} else if (level >= 0 and precedence[level].type == operation_set::call) {
-		for (int i = 0; i < (int)arguments.size(); i++) {
-			result += arguments[i].to_string((i == 0 ? level : -1), tab);
-			if (i < (int)operations.size()) {
-				result += operations[i];
+		result += arguments[0].to_string(level, tab);
+		if (not operations.empty()) {
+			result += operations[0];
+			for (int i = 1; i < (int)arguments.size(); i++) {
+				if (i != 1) {
+					result += operations[i-1];
+				}
+				result += arguments[i].to_string(-1, tab);
 			}
+			result += operations.back();
 		}
 	}
 

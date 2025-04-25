@@ -90,6 +90,27 @@ void assignment::parse(tokenizer &tokens, void *data)
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			tokens.next();
 		}
+
+		expression expr;
+		int level = 0;
+		for (level = 0; expression::precedence[level].type != operation_set::call; level++);
+		if (level < (int)expression::precedence.size()) {
+			expr.valid = true;
+			expr.level = level;
+			expr.arguments.push_back(argument(names[0]));
+			expr.operations.push_back(expression::precedence[level].symbols[0]);
+			for (int i = 0; i < (int)expressions.size(); i++) {
+				if (i != 0) {
+					expr.operations.push_back(expression::precedence[level].symbols[1]);
+				}
+				expr.arguments.push_back(argument(expressions[i]));
+			}
+			expr.operations.push_back(expression::precedence[level].symbols[2]);
+			names.clear();
+			expressions.clear();
+			expressions.push_back(expr);
+			operation = "=";
+		}
 	}
 
 	tokens.syntax_end(this);
