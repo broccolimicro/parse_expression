@@ -110,17 +110,17 @@ void expression::init()
 }
 
 int expression::get_level(string operation) {
-	for (int i = 0; i < (int)precedence.size(); i++)
-		if (level_has(i, operaton)) {
+	for (int i = 0; i < (int)precedence.size(); i++) {
+		if (level_has(i, operation)) {
 			return i;
 		}
 	}
 
-	return precedence.size();
+	return (int)precedence.size();
 }
 
 bool expression::level_has(int level, string operation) {
-	if (precendence[level].type == operation_set::call) {
+	if (precedence[level].type == operation_set::call) {
 		return precedence[level].symbols[0] == operation;
 	}
 
