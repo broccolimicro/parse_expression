@@ -62,7 +62,7 @@ TEST(ExpressionParser, ParenthesesGrouping) {
 
 TEST(ExpressionParser, ComplexVariableNames) {
 	// Test complex variable names with dots and slices
-	string test_code = "module.sub.signal[3] & another.signal[1..5]";
+	string test_code = "module.sub.signal[3] & another.signal[1:5][c::x:a+b]";
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -73,7 +73,7 @@ TEST(ExpressionParser, ComplexVariableNames) {
 	expression expr(tokens);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
-	EXPECT_EQ(expr.to_string(), "module.sub.signal[3]&another.signal[1..5]");
+	EXPECT_EQ(expr.to_string(), "module.sub.signal[3]&another.signal[1:5][c::x:a+b]");
 }
 
 TEST(ExpressionParser, NestedExpressions) {

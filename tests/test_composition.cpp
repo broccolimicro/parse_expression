@@ -26,7 +26,7 @@ TEST(AssignmentParser, BasicAssignment) {
 	assignment assign(tokens);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(assign.valid);
-	EXPECT_EQ(assign.names.size(), 1u);
+	EXPECT_EQ(assign.lvalue.size(), 1u);
 	EXPECT_EQ(assign.operation, "+");
 	EXPECT_EQ(assign.to_string(), "a+");
 }

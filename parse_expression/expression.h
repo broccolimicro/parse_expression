@@ -2,35 +2,52 @@
 
 #include <parse/parse.h>
 #include <parse/syntax.h>
-#include <parse_ucs/variable_name.h>
 
-namespace parse_expression
-{
-using variable_name=parse_ucs::variable_name;
+namespace parse_expression {
 
-struct operation_set
-{
+struct operation {
+	operation();
+	operation(string prefix, string trigger, string infix, int next, string postfix);
+	~operation();
+
+	string prefix;
+	string trigger;
+	string infix;
+	int next;
+	string postfix;
+};
+
+bool operator==(operation o0, operation o1);
+bool operator!=(operation o0, operation o1);
+
+struct operation_set {
 	operation_set();
 	operation_set(int type);
 	~operation_set();
 
-	vector<string> symbols;
-	int type;
-
-	enum
-	{
-		left_unary = 0,
-		right_unary = 1,
-		binary = 2,
-		ternary = 3,
-		call = 4,
+	// The types determine how the operators in a level should be parsed
+	enum {
+		UNDEF    = -1, // This is an error case
+		TERNARY  =  0, // Uses trigger and infix
+		BINARY   =  1, // Uses infix
+		UNARY    =  2, // Uses prefix
+		// array in dex, call, isochronic region
+		MODIFIER =  3, // Uses trigger, infix, and postfix
+		// array
+		GROUP    =  4  // Uses prefix, infix, and postfix
 	};
+
+	int type;
+	vector<operation> symbols;
+
+	void push(string prefix, string trigger, string infix, int next, string postfix);
+	void push(operation op);
+	bool has(operation op);
 };
 
 struct argument;
 
-struct expression : parse::syntax
-{
+struct expression : parse::syntax {
 	expression();
 	expression(tokenizer &tokens, int level = 0, void *data = NULL);
 	~expression();
@@ -38,16 +55,18 @@ struct expression : parse::syntax
 	void init();
 
 	vector<argument> arguments;
-	vector<string> operations;
+	vector<int> operators;
 
 	string region;
 	int level;
 
 	static vector<operation_set> precedence;
-	static int get_level(string operation);
-	static bool level_has(int level, string operation);
+	static int get_level(string prefix, string trigger, string infix, string postfix);
+	const vector<operation> &symbols() const;
+	const operation &symbol(int i) const;
 
-	void readLiteral(tokenizer &tokens, void *data = NULL);
+	void expectLiteral(tokenizer &tokens);
+	void readLiteral(tokenizer &tokens, int next, void *data = NULL);
 	void parse(tokenizer &tokens, void *data = NULL);
 	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);
 	static void register_syntax(tokenizer &tokens);
@@ -57,17 +76,17 @@ struct expression : parse::syntax
 	parse::syntax *clone() const;
 };
 
-struct argument
-{
+struct argument {
 	argument();
 	argument(expression sub);
-	argument(variable_name literal);
-	argument(string constant);
 	~argument();
 
 	expression sub;
-	variable_name literal;
+	string literal;
 	string constant;
+
+	static argument literalOf(string str);
+	static argument constantOf(string str);
 
 	string to_string(int level = -1, string tab = "") const;
 };
