@@ -80,7 +80,6 @@ expression::expression()
 {
 	debug_name = "expression";
 	level = 0;
-	region = "";
 	init();
 }
 
@@ -88,7 +87,6 @@ expression::expression(tokenizer &tokens, int level, void *data)
 {
 	debug_name = "expression";
 	this->level = level;
-	region = "";
 	init();
 	parse(tokens, data);
 }
@@ -611,7 +609,7 @@ string expression::to_string(int prev_level, string tab) const {
 
 	string result = "";
 	bool paren = prev_level > level;
-	if (paren or region != "") {
+	if (paren) {
 		result += "(";
 	}
 
@@ -660,11 +658,8 @@ string expression::to_string(int prev_level, string tab) const {
 		result += "???";
 	}
 
-	if (paren or region != "")
+	if (paren)
 		result += ")";
-
-	if (region != "")
-		result += "'" + region;
 
 	return result;
 }
