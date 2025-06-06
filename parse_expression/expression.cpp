@@ -19,11 +19,10 @@ vector<operation_set> expression::precedence;
 operation::operation() {
 }
 
-operation::operation(string prefix, string trigger, string infix, int next, string postfix) {
+operation::operation(string prefix, string trigger, string infix, string postfix) {
 	this->prefix = prefix;
 	this->trigger = trigger;
 	this->infix = infix;
-	this->next = next;
 	this->postfix = postfix;
 }
 
@@ -60,8 +59,8 @@ operation_set::operation_set(int type) {
 operation_set::~operation_set() {
 }
 
-void operation_set::push(string prefix, string trigger, string infix, int next, string postfix) {
-	push(operation(prefix, trigger, infix, next, postfix));
+void operation_set::push(string prefix, string trigger, string infix, string postfix) {
+	push(operation(prefix, trigger, infix, postfix));
 }
 
 void operation_set::push(operation op) {
@@ -102,87 +101,111 @@ void expression::init() {
 	if (precedence.size() == 0) {	
 		// 0
 		precedence.push_back(operation_set(operation_set::TERNARY));
-		precedence.back().push("", "?", ":", -1, "");
+		precedence.back().push("", "?", ":", "");
 
 		// 1
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "|", -1, "");
+		precedence.back().push("", "", "|", "");
 
 		// 2
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "&", -1, "");
+		precedence.back().push("", "", "&", "");
 
 		// 3
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "^", -1, "");
+		precedence.back().push("", "", "^", "");
 
 		// 4
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "==", -1, "");
-		precedence.back().push("", "", "~=", -1, "");
-		precedence.back().push("", "", "<", -1, "");
-		precedence.back().push("", "", ">", -1, "");
-		precedence.back().push("", "", "<=", -1, "");
-		precedence.back().push("", "", ">=", -1, "");
+		precedence.back().push("", "", "==", "");
+		precedence.back().push("", "", "~=", "");
+		precedence.back().push("", "", "<", "");
+		precedence.back().push("", "", ">", "");
+		precedence.back().push("", "", "<=", "");
+		precedence.back().push("", "", ">=", "");
 
 		// 5
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "||", -1, "");
+		precedence.back().push("", "", "||", "");
 		
 		// 6
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "&&", -1, "");
+		precedence.back().push("", "", "&&", "");
 
 		// 7
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "^^", -1, "");
+		precedence.back().push("", "", "^^", "");
 
 		// 8
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "<<", -1, "");
-		precedence.back().push("", "", ">>", -1, "");
+		precedence.back().push("", "", "<<", "");
+		precedence.back().push("", "", ">>", "");
 
 		// 9
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "+", -1, "");
-		precedence.back().push("", "", "-", -1, "");
+		precedence.back().push("", "", "+", "");
+		precedence.back().push("", "", "-", "");
 
 		// 10
 		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "*", -1, "");
-		precedence.back().push("", "", "/", -1, "");
-		precedence.back().push("", "", "%", -1, "");
+		precedence.back().push("", "", "*", "");
+		precedence.back().push("", "", "/", "");
+		precedence.back().push("", "", "%", "");
 
 		// 11
 		precedence.push_back(operation_set(operation_set::UNARY));
-		precedence.back().push("!", "", "", -1, "");
-		precedence.back().push("~", "", "", -1, "");
-		precedence.back().push("+", "", "", -1, "");
-		precedence.back().push("-", "", "", -1, "");
-		precedence.back().push("?", "", "", -1, "");
+		precedence.back().push("!", "", "", "");
+		precedence.back().push("~", "", "", "");
+		precedence.back().push("+", "", "", "");
+		precedence.back().push("-", "", "", "");
+		precedence.back().push("?", "", "", "");
 
 		// 12
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "::", -1, "");
+		precedence.push_back(operation_set(operation_set::MODIFIER));
+		precedence.back().push("", "'", "", "");
 
 		// 13
-		precedence.push_back(operation_set(operation_set::GROUP));
-		precedence.back().push("[", "", ",", 0, "]");
+		precedence.push_back(operation_set(operation_set::BINARY));
+		precedence.back().push("", "", "::", "");
 
 		// 14
-		precedence.push_back(operation_set(operation_set::MODIFIER));
-		precedence.back().push("", "(", ",", 0, ")");
-		precedence.back().push("", "[", ":", 0, "]");
+		precedence.push_back(operation_set(operation_set::BINARY));
+		precedence.back().push("", "", ".", "");
 
 		// 15
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", ".", -1, "");
+		precedence.push_back(operation_set(operation_set::MODIFIER));
+		precedence.back().push("", "(", ",", ")");
+		precedence.back().push("", "[", ":", "]");
+
+		// 16	
+		precedence.push_back(operation_set(operation_set::GROUP));
+		precedence.back().push("[", "", ",", "]");
 	}
 }
 
-int expression::get_level(string prefix, string trigger, string infix, string postfix) {
+bool expression::isTernary() const {
+	return precedence[level].type == operation_set::TERNARY;
+}
+
+bool expression::isBinary() const {
+	return precedence[level].type == operation_set::BINARY;
+}
+
+bool expression::isUnary() const {
+	return precedence[level].type == operation_set::UNARY;
+}
+
+bool expression::isModifier() const {
+	return precedence[level].type == operation_set::MODIFIER;
+}
+
+bool expression::isGroup() const {
+	return precedence[level].type == operation_set::GROUP;
+}
+
+int expression::get_level(int type, string prefix, string trigger, string infix, string postfix) {
 	for (int i = 0; i < (int)precedence.size(); i++) {
-		if (precedence[i].has(operation(prefix, trigger, infix, -1, postfix))) {
+		if (type == precedence[i].type and precedence[i].has(operation(prefix, trigger, infix, postfix))) {
 			return i;
 		}
 	}
@@ -222,9 +245,6 @@ void expression::readLiteral(tokenizer &tokens, int next, void *data) {
 	} else if (tokens.found("(")) {
 		tokens.next();
 
-		tokens.increment(false);
-		tokens.expect("'");
-
 		tokens.increment(true);
 		tokens.expect(")");
 
@@ -237,17 +257,6 @@ void expression::readLiteral(tokenizer &tokens, int next, void *data) {
 
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			tokens.next();
-		}
-
-		if (tokens.decrement(__FILE__, __LINE__, data)) {
-			tokens.next();
-
-			tokens.increment(true);
-			tokens.expect<parse::number>();
-
-			if (tokens.decrement(__FILE__, __LINE__, data)) {
-				region = tokens.next();
-			}
 		}
 	}
 }
@@ -443,22 +452,31 @@ void expression::parse(tokenizer &tokens, void *data) {
 				}
 			}
 
-			tokens.increment(false);
-			tokens.expect(symbol(match[0]).infix);
-
-			tokens.increment(true);
-			expectLiteral(tokens);
-
-			if (tokens.decrement(__FILE__, __LINE__, data)) {
-				readLiteral(tokens, 0, data);
-			}
-
-			while (tokens.decrement(__FILE__, __LINE__, data)) {
-				tokens.next();
-
+			if (not symbol(match[0]).infix.empty()) {
 				tokens.increment(false);
 				tokens.expect(symbol(match[0]).infix);
 
+				tokens.increment(true);
+				expectLiteral(tokens);
+
+				if (tokens.decrement(__FILE__, __LINE__, data)) {
+					readLiteral(tokens, 0, data);
+				}
+
+				while (tokens.decrement(__FILE__, __LINE__, data)) {
+					tokens.next();
+
+					tokens.increment(false);
+					tokens.expect(symbol(match[0]).infix);
+
+					tokens.increment(true);
+					expectLiteral(tokens);
+
+					if (tokens.decrement(__FILE__, __LINE__, data)) {
+						readLiteral(tokens, 0, data);
+					}
+				}
+			} else {
 				tokens.increment(true);
 				expectLiteral(tokens);
 

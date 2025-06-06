@@ -7,13 +7,12 @@ namespace parse_expression {
 
 struct operation {
 	operation();
-	operation(string prefix, string trigger, string infix, int next, string postfix);
+	operation(string prefix, string trigger, string infix, string postfix);
 	~operation();
 
 	string prefix;
 	string trigger;
 	string infix;
-	int next;
 	string postfix;
 };
 
@@ -40,7 +39,7 @@ struct operation_set {
 	int type;
 	vector<operation> symbols;
 
-	void push(string prefix, string trigger, string infix, int next, string postfix);
+	void push(string prefix, string trigger, string infix, string postfix);
 	void push(operation op);
 	bool has(operation op);
 };
@@ -59,9 +58,16 @@ struct expression : parse::syntax {
 
 	string region;
 	int level;
-
+	
 	static vector<operation_set> precedence;
-	static int get_level(string prefix, string trigger, string infix, string postfix);
+
+	bool isTernary() const;
+	bool isBinary() const;
+	bool isUnary() const;
+	bool isModifier() const;
+	bool isGroup() const;
+
+	static int get_level(int type, string prefix, string trigger, string infix, string postfix);
 	const vector<operation> &symbols() const;
 	const operation &symbol(int i) const;
 
