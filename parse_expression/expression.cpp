@@ -29,6 +29,10 @@ operation::operation(string prefix, string trigger, string infix, string postfix
 operation::~operation() {
 }
 
+bool operation::is(string prefix, string trigger, string infix, string postfix) const {
+	return this->prefix == prefix and this->trigger == trigger and this->infix == infix and this->postfix == postfix;
+}
+
 bool operator==(operation o0, operation o1) {
 	if (o0.infix.size() != o1.infix.size()
 		or o0.prefix != o1.prefix
@@ -67,13 +71,13 @@ void operation_set::push(operation op) {
 	symbols.push_back(op);
 }
 
-bool operation_set::has(operation op) {
-	for (auto i = symbols.begin(); i != symbols.end(); i++) {
-		if (*i == op) {
-			return true;
+int operation_set::find(operation op) {
+	for (int i = 0; i < (int)symbols.size(); i++) {
+		if (symbols[i] == op) {
+			return i;
 		}
 	}
-	return false;
+	return -1;
 }
 
 expression::expression()
@@ -154,13 +158,14 @@ void expression::init() {
 		precedence.push_back(operation_set(operation_set::UNARY));
 		precedence.back().push("!", "", "", "");
 		precedence.back().push("~", "", "", "");
+		precedence.back().push("(bool)", "", "", "");
 		precedence.back().push("+", "", "", "");
 		precedence.back().push("-", "", "", "");
 		precedence.back().push("?", "", "", "");
 
 		// 12
-		precedence.push_back(operation_set(operation_set::MODIFIER));
-		precedence.back().push("", "'", "", "");
+		precedence.push_back(operation_set(operation_set::BINARY));
+		precedence.back().push("", "", "'", "");
 
 		// 13
 		precedence.push_back(operation_set(operation_set::BINARY));
@@ -201,14 +206,18 @@ bool expression::isGroup() const {
 	return precedence[level].type == operation_set::GROUP;
 }
 
-int expression::get_level(int type, string prefix, string trigger, string infix, string postfix) {
+pair<int, int> expression::find(int type, string prefix, string trigger, string infix, string postfix) {
+	operation search(prefix, trigger, infix, postfix);
 	for (int i = 0; i < (int)precedence.size(); i++) {
-		if (type == precedence[i].type and precedence[i].has(operation(prefix, trigger, infix, postfix))) {
-			return i;
+		if (type == precedence[i].type) {
+			int j = precedence[i].find(search);
+			if (j >= 0) {
+				return {i, j};
+			}
 		}
 	}
 
-	return (int)precedence.size();
+	return {-1, -1};
 }
 
 const vector<operation> &expression::symbols() const {

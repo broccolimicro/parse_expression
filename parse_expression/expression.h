@@ -14,6 +14,8 @@ struct operation {
 	string trigger;
 	string infix;
 	string postfix;
+
+	bool is(string prefix, string trigger, string infix, string postfix) const;
 };
 
 bool operator==(operation o0, operation o1);
@@ -41,7 +43,7 @@ struct operation_set {
 
 	void push(string prefix, string trigger, string infix, string postfix);
 	void push(operation op);
-	bool has(operation op);
+	int find(operation op);
 };
 
 struct argument;
@@ -66,7 +68,7 @@ struct expression : parse::syntax {
 	bool isModifier() const;
 	bool isGroup() const;
 
-	static int get_level(int type, string prefix, string trigger, string infix, string postfix);
+	static pair<int, int> find(int type, string prefix, string trigger, string infix, string postfix);
 	const vector<operation> &symbols() const;
 	const operation &symbol(int i) const;
 

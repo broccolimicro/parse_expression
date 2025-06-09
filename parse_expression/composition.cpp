@@ -164,30 +164,30 @@ string composition::to_string(string tab) const
 
 string composition::to_string(int prev_level, string tab) const
 {
-	if (!valid || (literals.size() == 0 && compositions.size() == 0 && guards.size() == 0))
-	{
-		if (level == 0)
+	if (!valid or level < 0 or (literals.empty() and compositions.empty() and guards.empty())) {
+		if (level == 0) {
 			return "null";
-		else if (level == 1)
+		} else if (level == 1) {
 			return "skip";
+		}
+		return "error";
 	}
 
 	string result = "";
 	bool first = true;
-	for (int i = 0; i < (int)guards.size(); i++)
-	{
-		if (!first)
+	for (int i = 0; i < (int)guards.size(); i++) {
+		if (!first) {
 			result += precedence[level];
-
+		}
 		result += "[" + guards[i].to_string(tab) + "]";
 		cout << result << endl;
 		first = false;
 	}
 
-	for (int i = 0; i < (int)literals.size(); i++)
-	{
-		if (!first)
+	for (int i = 0; i < (int)literals.size(); i++) {
+		if (!first) {
 			result += precedence[level];
+		}
 
 		result += literals[i].to_string(tab);
 		first = false;
