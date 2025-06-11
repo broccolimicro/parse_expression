@@ -33,19 +33,31 @@ bool operation::is(string prefix, string trigger, string infix, string postfix) 
 	return this->prefix == prefix and this->trigger == trigger and this->infix == infix and this->postfix == postfix;
 }
 
-bool operator==(operation o0, operation o1) {
-	if (o0.infix.size() != o1.infix.size()
-		or o0.prefix != o1.prefix
-		or o0.postfix != o1.postfix) {
-		return false;
-	}
-
-	for (int i = 0; i < (int)o0.infix.size(); i++) {
-		if (o0.infix[i] != o1.infix[i]) {
-			return false;
+string operation::to_string() const {
+	string result;
+	if (not trigger.empty()) {
+		result = "a" + trigger;
+		if (not infix.empty()) {
+			result += infix + "b";
 		}
+		result += postfix;
+	} else {
+		result += prefix + "a";
+		if (not infix.empty()) {
+			result += infix + "b";
+		}
+		result += postfix;
 	}
-	return true;
+	return result;
+}
+
+ostream &operator<<(ostream &os, operation &o) {
+	os << o.to_string();
+	return os;
+}
+
+bool operator==(operation o0, operation o1) {
+	return o0.prefix == o1.prefix and o0.trigger == o1.trigger and o0.infix == o1.infix and o0.postfix == o1.postfix;
 }
 
 bool operator!=(operation o0, operation o1) {
@@ -100,24 +112,22 @@ expression::~expression()
 }
 
 void expression::init() {
-	if (precedence.size() == 0) {	
-		// 0
+	if (precedence.size() == 0) {
+		precedence.push_back(operation_set(operation_set::GROUP));
+		precedence.back().push("[", "", ",", "]");
+
 		precedence.push_back(operation_set(operation_set::TERNARY));
 		precedence.back().push("", "?", ":", "");
 
-		// 1
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "|", "");
 
-		// 2
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "&", "");
 
-		// 3
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "^", "");
 
-		// 4
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "==", "");
 		precedence.back().push("", "", "~=", "");
@@ -126,35 +136,28 @@ void expression::init() {
 		precedence.back().push("", "", "<=", "");
 		precedence.back().push("", "", ">=", "");
 
-		// 5
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "||", "");
 		
-		// 6
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "&&", "");
 
-		// 7
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "^^", "");
 
-		// 8
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "<<", "");
 		precedence.back().push("", "", ">>", "");
 
-		// 9
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "+", "");
 		precedence.back().push("", "", "-", "");
 
-		// 10
 		precedence.push_back(operation_set(operation_set::BINARY));
 		precedence.back().push("", "", "*", "");
 		precedence.back().push("", "", "/", "");
 		precedence.back().push("", "", "%", "");
 
-		// 11
 		precedence.push_back(operation_set(operation_set::UNARY));
 		precedence.back().push("!", "", "", "");
 		precedence.back().push("~", "", "", "");
@@ -163,26 +166,16 @@ void expression::init() {
 		precedence.back().push("-", "", "", "");
 		precedence.back().push("?", "", "", "");
 
-		// 12
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "'", "");
+		precedence.push_back(operation_set(operation_set::MODIFIER));
+		precedence.back().push("", "'", "", "");
 
-		// 13
-		/*precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "::", "");*/
-
-		// 14
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", ".", "");
-
-		// 15
 		precedence.push_back(operation_set(operation_set::MODIFIER));
 		precedence.back().push("", "(", ",", ")");
+		precedence.back().push("", ".", "", "");
 		precedence.back().push("", "[", ":", "]");
-
-		// 16	
-		precedence.push_back(operation_set(operation_set::GROUP));
-		precedence.back().push("[", "", ",", "]");
+		
+		precedence.push_back(operation_set(operation_set::MODIFIER));
+		precedence.back().push("", "::", "", "");
 	}
 }
 
@@ -228,8 +221,8 @@ const operation &expression::symbol(int i) const {
 	return precedence[level].symbols[i];
 }
 
-void expression::expectLiteral(tokenizer &tokens) {
-	if (level < (int)precedence.size()-1) {
+void expression::expectLiteral(tokenizer &tokens, int next) {
+	if ((next < 0 ? level+1 : next) < (int)precedence.size()) {
 		tokens.expect<expression>();
 	} else {
 		tokens.expect<parse::instance>();
@@ -278,7 +271,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 		}
 
 		tokens.increment(true);
-		expectLiteral(tokens);
+		expectLiteral(tokens, -1);
 
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			readLiteral(tokens, -1, data);
@@ -294,7 +287,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 			}
 
 			tokens.increment(true);
-			expectLiteral(tokens);
+			expectLiteral(tokens, -1);
 
 			tokens.increment(true);
 			for (int i = 0; i < (int)match.size(); i++) {
@@ -302,7 +295,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 			}
 
 			tokens.increment(true);
-			expectLiteral(tokens);
+			expectLiteral(tokens, -1);
 			
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
 				readLiteral(tokens, -1, data);
@@ -337,7 +330,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 		}
 
 		tokens.increment(true);
-		expectLiteral(tokens);
+		expectLiteral(tokens, -1);
 
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			readLiteral(tokens, -1, data);
@@ -367,7 +360,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 			}
 
 			tokens.increment(true);
-			expectLiteral(tokens);
+			expectLiteral(tokens, -1);
 
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
 				readLiteral(tokens, -1, data);
@@ -375,7 +368,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 		}
 	} else if (precedence[level].type == operation_set::UNARY) {
 		tokens.increment(true);
-		expectLiteral(tokens);
+		expectLiteral(tokens, -1);
 
 		tokens.increment(false);
 		for (int i = 0; i < (int)symbols().size(); i++) {
@@ -416,7 +409,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 		}
 
 		tokens.increment(true);
-		expectLiteral(tokens);
+		expectLiteral(tokens, -1);
 
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			readLiteral(tokens, -1, data);
@@ -461,7 +454,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 
 			if (not symbol(match[0]).infix.empty()) {
 				tokens.increment(false);
-				expectLiteral(tokens);
+				expectLiteral(tokens, 0);
 
 				if (tokens.decrement(__FILE__, __LINE__, data)) {
 					readLiteral(tokens, 0, data);
@@ -476,7 +469,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 						tokens.expect(symbol(match[0]).infix);
 
 						tokens.increment(true);
-						expectLiteral(tokens);
+						expectLiteral(tokens, 0);
 
 						if (tokens.decrement(__FILE__, __LINE__, data)) {
 							readLiteral(tokens, 0, data);
@@ -485,10 +478,10 @@ void expression::parse(tokenizer &tokens, void *data) {
 				}
 			} else {
 				tokens.increment(true);
-				expectLiteral(tokens);
+				expectLiteral(tokens, -1);
 
 				if (tokens.decrement(__FILE__, __LINE__, data)) {
-					readLiteral(tokens, 0, data);
+					readLiteral(tokens, -1, data);
 				}
 			}
 
@@ -529,7 +522,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 			tokens.expect(symbol(match[0]).postfix);
 	
 			tokens.increment(false);
-			expectLiteral(tokens);
+			expectLiteral(tokens, 0);
 
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
 				readLiteral(tokens, 0, data);
@@ -544,7 +537,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 					tokens.expect(symbol(match[0]).infix);
 
 					tokens.increment(true);
-					expectLiteral(tokens);
+					expectLiteral(tokens, 0);
 
 					if (tokens.decrement(__FILE__, __LINE__, data)) {
 						readLiteral(tokens, 0, data);
@@ -557,7 +550,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 			}
 		}	else {
 			tokens.increment(true);
-			expectLiteral(tokens);
+			expectLiteral(tokens, -1);
 
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
 				readLiteral(tokens, -1, data);
@@ -580,7 +573,6 @@ bool expression::is_next(tokenizer &tokens, int i, void *data) {
 		or tokens.is_next("var", i)) {
 		return false;
 	}
-
 
 	int level = -1;
 	if (data != NULL)

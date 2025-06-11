@@ -16,7 +16,11 @@ struct operation {
 	string postfix;
 
 	bool is(string prefix, string trigger, string infix, string postfix) const;
+
+	string to_string() const;
 };
+
+ostream &operator<<(ostream &os, operation &o);
 
 bool operator==(operation o0, operation o1);
 bool operator!=(operation o0, operation o1);
@@ -72,7 +76,7 @@ struct expression : parse::syntax {
 	const vector<operation> &symbols() const;
 	const operation &symbol(int i) const;
 
-	void expectLiteral(tokenizer &tokens);
+	void expectLiteral(tokenizer &tokens, int next);
 	void readLiteral(tokenizer &tokens, int next, void *data = NULL);
 	void parse(tokenizer &tokens, void *data = NULL);
 	static bool is_next(tokenizer &tokens, int i = 1, void *data = NULL);
