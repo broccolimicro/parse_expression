@@ -168,8 +168,8 @@ void expression::init() {
 		precedence.back().push("", "", "'", "");
 
 		// 13
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "::", "");
+		/*precedence.push_back(operation_set(operation_set::BINARY));
+		precedence.back().push("", "", "::", "");*/
 
 		// 14
 		precedence.push_back(operation_set(operation_set::BINARY));
@@ -461,26 +461,26 @@ void expression::parse(tokenizer &tokens, void *data) {
 
 			if (not symbol(match[0]).infix.empty()) {
 				tokens.increment(false);
-				tokens.expect(symbol(match[0]).infix);
-
-				tokens.increment(true);
 				expectLiteral(tokens);
 
 				if (tokens.decrement(__FILE__, __LINE__, data)) {
 					readLiteral(tokens, 0, data);
-				}
-
-				while (tokens.decrement(__FILE__, __LINE__, data)) {
-					tokens.next();
 
 					tokens.increment(false);
 					tokens.expect(symbol(match[0]).infix);
 
-					tokens.increment(true);
-					expectLiteral(tokens);
+					while (tokens.decrement(__FILE__, __LINE__, data)) {
+						tokens.next();
 
-					if (tokens.decrement(__FILE__, __LINE__, data)) {
-						readLiteral(tokens, 0, data);
+						tokens.increment(false);
+						tokens.expect(symbol(match[0]).infix);
+
+						tokens.increment(true);
+						expectLiteral(tokens);
+
+						if (tokens.decrement(__FILE__, __LINE__, data)) {
+							readLiteral(tokens, 0, data);
+						}
 					}
 				}
 			} else {
@@ -569,6 +569,19 @@ void expression::parse(tokenizer &tokens, void *data) {
 }
 
 bool expression::is_next(tokenizer &tokens, int i, void *data) {
+	if (tokens.is_next("func", i)
+		or tokens.is_next("struct", i)
+		or tokens.is_next("interface", i)
+		or tokens.is_next("context", i)
+		or tokens.is_next("await", i) 
+		or tokens.is_next("while", i)
+		or tokens.is_next("region", i)
+		or tokens.is_next("assume", i)
+		or tokens.is_next("var", i)) {
+		return false;
+	}
+
+
 	int level = -1;
 	if (data != NULL)
 		level = *(int*)data;
@@ -584,16 +597,6 @@ bool expression::is_next(tokenizer &tokens, int i, void *data) {
 			}
 		}
 	}
-
-	result = result
-		and not tokens.is_next("func", i)
-		and not tokens.is_next("struct", i)
-		and not tokens.is_next("interface", i)
-		and not tokens.is_next("context", i)
-		and not tokens.is_next("await", i) 
-		and not tokens.is_next("while", i)
-		and not tokens.is_next("region", i)
-		and not tokens.is_next("assume", i);
 
 	return result;
 }
