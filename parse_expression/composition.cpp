@@ -180,7 +180,6 @@ string composition::to_string(int prev_level, string tab) const
 			result += precedence[level];
 		}
 		result += "[" + guards[i].to_string(tab) + "]";
-		cout << result << endl;
 		first = false;
 	}
 
