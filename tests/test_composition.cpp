@@ -5,6 +5,7 @@
 #include <parse_expression/composition.h>
 #include <sstream>
 #include <string>
+#include "helpers.h"
 
 using namespace std;
 using namespace parse_expression;
@@ -16,6 +17,8 @@ using namespace parse_expression;
 TEST(AssignmentParser, BasicAssignment) {
 	// Test basic assignment with + operation
 	string test_code = "a+";
+
+	expression::register_precedence(createPrecedence());
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -34,6 +37,8 @@ TEST(AssignmentParser, BasicAssignment) {
 TEST(AssignmentParser, RemovalOperation) {
 	string test_code = "a-";
 	
+	expression::register_precedence(createPrecedence());
+
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
@@ -48,6 +53,8 @@ TEST(AssignmentParser, RemovalOperation) {
 
 TEST(AssignmentParser, ComplexVariableName) {
 	string test_code = "module.signal[3]+";
+
+	expression::register_precedence(createPrecedence());
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -64,6 +71,8 @@ TEST(AssignmentParser, ComplexVariableName) {
 TEST(AssignmentParser, AssignmentWithExpression) {
 	// Test assignment with expression
 	string test_code = "d = a & b | c";
+
+	expression::register_precedence(createPrecedence());
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -80,6 +89,8 @@ TEST(AssignmentParser, AssignmentWithExpression) {
 TEST(AssignmentParser, FunctionCall) {
 	// Test multiple assignments with expressions
 	string test_code = "v1=f0(a & b, c | d)";
+	
+	expression::register_precedence(createPrecedence());
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -101,6 +112,8 @@ TEST(CompositionParser, ParallelComposition) {
 	// Test parallel composition (,)
 	string test_code = "a+, b+, c-";
 	
+	expression::register_precedence(createPrecedence());
+	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
@@ -116,6 +129,8 @@ TEST(CompositionParser, ParallelComposition) {
 TEST(CompositionParser, InternalChoice) {
 	// Test internal choice (:)
 	string test_code = "(a+) : (b-)";
+	
+	expression::register_precedence(createPrecedence());
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -133,6 +148,8 @@ TEST(CompositionParser, NestedComposition) {
 	// Test nested compositions
 	string test_code = "(a+, b+) : (c-, (d+ : e+))";
 	
+	expression::register_precedence(createPrecedence());
+	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
@@ -148,6 +165,8 @@ TEST(CompositionParser, NestedComposition) {
 TEST(CompositionParser, ComplexComposition) {
 	// Test a complex composition structure
 	string test_code = "(a = x & y, b-) : (e = c & d ? f : g)";
+	
+	expression::register_precedence(createPrecedence());
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);

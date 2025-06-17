@@ -14,96 +14,18 @@
 namespace parse_expression
 {
 
-vector<operation_set> expression::precedence;
-
-operation::operation() {
-}
-
-operation::operation(string prefix, string trigger, string infix, string postfix) {
-	this->prefix = prefix;
-	this->trigger = trigger;
-	this->infix = infix;
-	this->postfix = postfix;
-}
-
-operation::~operation() {
-}
-
-bool operation::is(string prefix, string trigger, string infix, string postfix) const {
-	return this->prefix == prefix and this->trigger == trigger and this->infix == infix and this->postfix == postfix;
-}
-
-string operation::to_string() const {
-	string result;
-	if (not trigger.empty()) {
-		result = "a" + trigger;
-		if (not infix.empty()) {
-			result += infix + "b";
-		}
-		result += postfix;
-	} else {
-		result += prefix + "a";
-		if (not infix.empty()) {
-			result += infix + "b";
-		}
-		result += postfix;
-	}
-	return result;
-}
-
-ostream &operator<<(ostream &os, operation &o) {
-	os << o.to_string();
-	return os;
-}
-
-bool operator==(operation o0, operation o1) {
-	return o0.prefix == o1.prefix and o0.trigger == o1.trigger and o0.infix == o1.infix and o0.postfix == o1.postfix;
-}
-
-bool operator!=(operation o0, operation o1) {
-	return not (o0 == o1);
-}
-
-operation_set::operation_set() {
-	type = -1;
-}
-
-operation_set::operation_set(int type) {
-	this->type = type;
-}
-
-operation_set::~operation_set() {
-}
-
-void operation_set::push(string prefix, string trigger, string infix, string postfix) {
-	push(operation(prefix, trigger, infix, postfix));
-}
-
-void operation_set::push(operation op) {
-	symbols.push_back(op);
-}
-
-int operation_set::find(operation op) {
-	for (int i = 0; i < (int)symbols.size(); i++) {
-		if (symbols[i] == op) {
-			return i;
-		}
-	}
-	return -1;
-}
+precedence_set expression::precedence;
 
 expression::expression()
 {
 	debug_name = "expression";
 	level = 0;
-	init();
 }
 
 expression::expression(tokenizer &tokens, int level, void *data)
 {
 	debug_name = "expression";
 	this->level = level;
-	init();
 	parse(tokens, data);
 }
 
@@ -111,118 +33,12 @@ expression::~expression()
 {
 }
 
-void expression::init() {
-	if (precedence.size() == 0) {
-		precedence.push_back(operation_set(operation_set::GROUP));
-		precedence.back().push("[", "", ",", "]");
-
-		precedence.push_back(operation_set(operation_set::TERNARY));
-		precedence.back().push("", "?", ":", "");
-
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "|", "");
-
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "&", "");
-
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "^", "");
-
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "==", "");
-		precedence.back().push("", "", "~=", "");
-		precedence.back().push("", "", "<", "");
-		precedence.back().push("", "", ">", "");
-		precedence.back().push("", "", "<=", "");
-		precedence.back().push("", "", ">=", "");
-
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "||", "");
-		
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "&&", "");
-
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "^^", "");
-
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "<<", "");
-		precedence.back().push("", "", ">>", "");
-
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "+", "");
-		precedence.back().push("", "", "-", "");
-
-		precedence.push_back(operation_set(operation_set::BINARY));
-		precedence.back().push("", "", "*", "");
-		precedence.back().push("", "", "/", "");
-		precedence.back().push("", "", "%", "");
-
-		precedence.push_back(operation_set(operation_set::UNARY));
-		precedence.back().push("!", "", "", "");
-		precedence.back().push("~", "", "", "");
-		precedence.back().push("(bool)", "", "", "");
-		precedence.back().push("+", "", "", "");
-		precedence.back().push("-", "", "", "");
-		precedence.back().push("?", "", "", "");
-
-		precedence.push_back(operation_set(operation_set::MODIFIER));
-		precedence.back().push("", "'", "", "");
-
-		precedence.push_back(operation_set(operation_set::MODIFIER));
-		precedence.back().push("", "(", ",", ")");
-		precedence.back().push("", ".", "", "");
-		precedence.back().push("", "[", ":", "]");
-		
-		precedence.push_back(operation_set(operation_set::MODIFIER));
-		precedence.back().push("", "::", "", "");
-	}
-}
-
-bool expression::isTernary() const {
-	return precedence[level].type == operation_set::TERNARY;
-}
-
-bool expression::isBinary() const {
-	return precedence[level].type == operation_set::BINARY;
-}
-
-bool expression::isUnary() const {
-	return precedence[level].type == operation_set::UNARY;
-}
-
-bool expression::isModifier() const {
-	return precedence[level].type == operation_set::MODIFIER;
-}
-
-bool expression::isGroup() const {
-	return precedence[level].type == operation_set::GROUP;
-}
-
-pair<int, int> expression::find(int type, string prefix, string trigger, string infix, string postfix) {
-	operation search(prefix, trigger, infix, postfix);
-	for (int i = 0; i < (int)precedence.size(); i++) {
-		if (type == precedence[i].type) {
-			int j = precedence[i].find(search);
-			if (j >= 0) {
-				return {i, j};
-			}
-		}
-	}
-
-	return {-1, -1};
-}
-
-const vector<operation> &expression::symbols() const {
-	return precedence[level].symbols;
-}
-
-const operation &expression::symbol(int i) const {
-	return precedence[level].symbols[i];
+void expression::register_precedence(const precedence_set &p) {
+	expression::precedence = p;
 }
 
 void expression::expectLiteral(tokenizer &tokens, int next) {
-	if ((next < 0 ? level+1 : next) < (int)precedence.size()) {
+	if (precedence.isValidLevel(next < 0 ? level+1 : next)) {
 		tokens.expect<expression>();
 	} else {
 		tokens.expect<parse::instance>();
@@ -264,10 +80,10 @@ void expression::readLiteral(tokenizer &tokens, int next, void *data) {
 void expression::parse(tokenizer &tokens, void *data) {
 	tokens.syntax_start(this);
 
-	if (precedence[level].type == operation_set::TERNARY) {
+	if (precedence.isTernary(level)) {
 		tokens.increment(false);
-		for (int i = 0; i < (int)symbols().size(); i++) {
-			tokens.expect(symbol(i).trigger);
+		for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+			tokens.expect(precedence.at(level, i).trigger);
 		}
 
 		tokens.increment(true);
@@ -280,8 +96,8 @@ void expression::parse(tokenizer &tokens, void *data) {
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)symbols().size(); i++) {
-				if (symbol(i).trigger == tok) {
+			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+				if (precedence.at(level, i).trigger == tok) {
 					match.push_back(i);
 				}
 			}
@@ -291,7 +107,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 
 			tokens.increment(true);
 			for (int i = 0; i < (int)match.size(); i++) {
-				tokens.expect(symbol(match[i]).infix);
+				tokens.expect(precedence.at(level, match[i]).infix);
 			}
 
 			tokens.increment(true);
@@ -304,7 +120,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
 				string tok = tokens.next();
 				for (int i = (int)match.size()-1; i >= 0; i--) {
-					if (symbol(match[i]).infix != tok) {
+					if (precedence.at(level, match[i]).infix != tok) {
 						match.erase(match.begin()+i);
 					}
 				}
@@ -323,10 +139,10 @@ void expression::parse(tokenizer &tokens, void *data) {
 				readLiteral(tokens, -1, data);
 			}
 		}
-	} else if (precedence[level].type == operation_set::BINARY) {
+	} else if (precedence.isBinary(level)) {
 		tokens.increment(false);
-		for (int i = 0; i < (int)symbols().size(); i++) {
-			tokens.expect(symbol(i).infix);
+		for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+			tokens.expect(precedence.at(level, i).infix);
 		}
 
 		tokens.increment(true);
@@ -339,8 +155,8 @@ void expression::parse(tokenizer &tokens, void *data) {
 		while (tokens.decrement(__FILE__, __LINE__, data)) {
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)symbols().size(); i++) {
-				if (symbol(i).infix == tok) {
+			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+				if (precedence.at(level, i).infix == tok) {
 					match.push_back(i);
 				}
 			}
@@ -355,8 +171,8 @@ void expression::parse(tokenizer &tokens, void *data) {
 			operators.push_back(match[0]);
 
 			tokens.increment(false);
-			for (int i = 0; i < (int)symbols().size(); i++) {
-				tokens.expect(symbol(i).infix);
+			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+				tokens.expect(precedence.at(level, i).infix);
 			}
 
 			tokens.increment(true);
@@ -366,20 +182,20 @@ void expression::parse(tokenizer &tokens, void *data) {
 				readLiteral(tokens, -1, data);
 			}
 		}
-	} else if (precedence[level].type == operation_set::UNARY) {
+	} else if (precedence.isUnary(level)) {
 		tokens.increment(true);
 		expectLiteral(tokens, -1);
 
 		tokens.increment(false);
-		for (int i = 0; i < (int)symbols().size(); i++) {
-			tokens.expect(symbol(i).prefix);
+		for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+			tokens.expect(precedence.at(level, i).prefix);
 		}
 
 		while (tokens.decrement(__FILE__, __LINE__, data)) {
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)symbols().size(); i++) {
-				if (symbol(i).prefix == tok) {
+			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+				if (precedence.at(level, i).prefix == tok) {
 					match.push_back(i);
 				}
 			}
@@ -394,18 +210,18 @@ void expression::parse(tokenizer &tokens, void *data) {
 			operators.push_back(match[0]);
 
 			tokens.increment(false);
-			for (auto i = 0; i < (int)symbols().size(); i++) {
-				tokens.expect(symbol(i).prefix);
+			for (auto i = 0; i < (int)precedence.at(level).size(); i++) {
+				tokens.expect(precedence.at(level, i).prefix);
 			}
 		}
 
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			readLiteral(tokens, -1, data);
 		}
-	} else if (precedence[level].type == operation_set::MODIFIER) {
+	} else if (precedence.isModifier(level)) {
 		tokens.increment(false);
-		for (int i = 0; i < (int)symbols().size(); i++) {
-			tokens.expect(symbol(i).trigger);
+		for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+			tokens.expect(precedence.at(level, i).trigger);
 		}
 
 		tokens.increment(true);
@@ -428,8 +244,8 @@ void expression::parse(tokenizer &tokens, void *data) {
 
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)symbols().size(); i++) {
-				if (symbol(i).trigger == tok) {
+			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+				if (precedence.at(level, i).trigger == tok) {
 					match.push_back(i);
 				}
 			}
@@ -443,16 +259,16 @@ void expression::parse(tokenizer &tokens, void *data) {
 
 			operators.push_back(match[0]);
 
-			if (not symbol(match[0]).postfix.empty()) {
+			if (not precedence.at(level, match[0]).postfix.empty()) {
 				tokens.increment(true);
-				for (int i = 0; i < (int)symbols().size(); i++) {
-					if (not symbol(i).postfix.empty()) {
-						tokens.expect(symbol(i).postfix);
+				for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+					if (not precedence.at(level, i).postfix.empty()) {
+						tokens.expect(precedence.at(level, i).postfix);
 					}
 				}
 			}
 
-			if (not symbol(match[0]).infix.empty()) {
+			if (not precedence.at(level, match[0]).infix.empty()) {
 				tokens.increment(false);
 				expectLiteral(tokens, 0);
 
@@ -460,13 +276,13 @@ void expression::parse(tokenizer &tokens, void *data) {
 					readLiteral(tokens, 0, data);
 
 					tokens.increment(false);
-					tokens.expect(symbol(match[0]).infix);
+					tokens.expect(precedence.at(level, match[0]).infix);
 
 					while (tokens.decrement(__FILE__, __LINE__, data)) {
 						tokens.next();
 
 						tokens.increment(false);
-						tokens.expect(symbol(match[0]).infix);
+						tokens.expect(precedence.at(level, match[0]).infix);
 
 						tokens.increment(true);
 						expectLiteral(tokens, 0);
@@ -485,26 +301,26 @@ void expression::parse(tokenizer &tokens, void *data) {
 				}
 			}
 
-			if (not symbol(match[0]).postfix.empty() and tokens.decrement(__FILE__, __LINE__, data)) {
+			if (not precedence.at(level, match[0]).postfix.empty() and tokens.decrement(__FILE__, __LINE__, data)) {
 				tokens.next();
 			}
 
 			tokens.increment(false);
-			for (int i = 0; i < (int)symbols().size(); i++) {
-				tokens.expect(symbol(i).trigger);
+			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+				tokens.expect(precedence.at(level, i).trigger);
 			}
 		}
-	} else if (precedence[level].type == operation_set::GROUP) {
+	} else if (precedence.isGroup(level)) {
 		tokens.increment(false);
-		for (int i = 0; i < (int)symbols().size(); i++) {
-			tokens.expect(symbol(i).prefix);
+		for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+			tokens.expect(precedence.at(level, i).prefix);
 		}
 
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)symbols().size(); i++) {
-				if (symbol(i).prefix == tok) {
+			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+				if (precedence.at(level, i).prefix == tok) {
 					match.push_back(i);
 				}
 			}
@@ -519,7 +335,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 			operators.push_back(match[0]);
 	
 			tokens.increment(true);
-			tokens.expect(symbol(match[0]).postfix);
+			tokens.expect(precedence.at(level, match[0]).postfix);
 	
 			tokens.increment(false);
 			expectLiteral(tokens, 0);
@@ -528,13 +344,13 @@ void expression::parse(tokenizer &tokens, void *data) {
 				readLiteral(tokens, 0, data);
 
 				tokens.increment(false);
-				tokens.expect(symbol(match[0]).infix);
+				tokens.expect(precedence.at(level, match[0]).infix);
 
 				while (tokens.decrement(__FILE__, __LINE__, data)) {
 					tokens.next();
 
 					tokens.increment(false);
-					tokens.expect(symbol(match[0]).infix);
+					tokens.expect(precedence.at(level, match[0]).infix);
 
 					tokens.increment(true);
 					expectLiteral(tokens, 0);
@@ -574,24 +390,26 @@ bool expression::is_next(tokenizer &tokens, int i, void *data) {
 		return false;
 	}
 
-	int level = -1;
-	if (data != NULL)
-		level = *(int*)data;
-
 	bool result = (tokens.is_next("(", i)
 		or tokens.is_next<parse::number>(i)
 		or tokens.is_next<parse::instance>(i));
 
+	int level = -1;
+	if (data != nullptr) {
+		level = *(int*)data;
+	}
+
 	for (int j = level+1; j < (int)precedence.size(); j++) {
-		if (precedence[j].type == operation_set::UNARY) {
-			for (int k = 0; k < (int)precedence[j].symbols.size(); k++) {
-				result = result or tokens.is_next(precedence[j].symbols[k].prefix, i);
+		if (precedence.isUnary(j)) {
+			for (int k = 0; k < (int)precedence.at(j).size(); k++) {
+				result = result or tokens.is_next(precedence.at(j, k).prefix, i);
 			}
 		}
 	}
 
 	return result;
 }
+
 
 void expression::register_syntax(tokenizer &tokens) {
 	if (!tokens.syntax_registered<expression>()) {
@@ -621,43 +439,43 @@ string expression::to_string(int prev_level, string tab) const {
 		result += "???";
 	} else if (operators.empty()) {
 		result += arguments[0].to_string(level, tab);
-	} else if (precedence[level].type == operation_set::TERNARY) {
+	} else if (precedence.isTernary(level)) {
 		result += arguments[0].to_string(level, tab)
-			+ symbol(operators[0]).trigger + arguments[1].to_string(level, tab)
-			+ symbol(operators[0]).infix + arguments[2].to_string(level, tab);
-	} else if (precedence[level].type == operation_set::BINARY) {
+			+ precedence.at(level, operators[0]).trigger + arguments[1].to_string(level, tab)
+			+ precedence.at(level, operators[0]).infix + arguments[2].to_string(level, tab);
+	} else if (precedence.isBinary(level)) {
 		for (int i = 0; i < (int)arguments.size() and i-1 < (int)operators.size(); i++) {
 			if (i != 0) {
-				result += symbol(operators[i-1]).infix;
+				result += precedence.at(level, operators[i-1]).infix;
 			}
 
 			result += arguments[i].to_string(level, tab);
 		}
-	} else if (precedence[level].type == operation_set::UNARY) {
+	} else if (precedence.isUnary(level)) {
 		for (int i = 0; i < (int)operators.size(); i++) {
-			result += symbol(operators[i]).prefix;
+			result += precedence.at(level, operators[i]).prefix;
 		}
 
 		result += arguments[0].to_string(level, tab);
-	} else if (precedence[level].type == operation_set::MODIFIER) {
-		result += arguments[0].to_string(level, tab) + symbol(operators[0]).trigger;
+	} else if (precedence.isModifier(level)) {
+		result += arguments[0].to_string(level, tab) + precedence.at(level, operators[0]).trigger;
 		for (int i = 1; i < (int)arguments.size(); i++) {
 			if (i != 1) {
-				result += symbol(operators[0]).infix;
+				result += precedence.at(level, operators[0]).infix;
 			}
 			result += arguments[i].to_string(-1, tab);
 		}
-		result += symbol(operators[0]).postfix;
-	} else if (precedence[level].type == operation_set::GROUP) {
-		result += symbol(operators[0]).prefix;
+		result += precedence.at(level, operators[0]).postfix;
+	} else if (precedence.isGroup(level)) {
+		result += precedence.at(level, operators[0]).prefix;
 		for (int i = 0; i < (int)arguments.size() and i-1 < (int)operators.size(); i++) {
 			if (i != 0) {
-				result += symbol(operators[0]).infix;
+				result += precedence.at(level, operators[0]).infix;
 			}
 
 			result += arguments[i].to_string(level, tab);
 		}
-		result += symbol(operators[0]).postfix;
+		result += precedence.at(level, operators[0]).postfix;
 	} else {
 		result += "???";
 	}
