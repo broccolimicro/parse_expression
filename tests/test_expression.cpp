@@ -10,28 +10,6 @@
 using namespace std;
 using namespace parse_expression;
 
-/*class GlobalTestEnvironment : public ::testing::Environment {
-public:
-	void SetUp() override {
-		// Runs once before all tests
-		printf("Global setup\n");
-	}
-
-	void TearDown() override {
-		// Runs once after all tests
-		printf("Global teardown\n");
-	}
-};
-
-// Static initializer to register environment
-namespace {
-struct GlobalEnvInitializer {
-	GlobalEnvInitializer() {
-		::testing::AddGlobalTestEnvironment(new GlobalTestEnvironment);
-	}
-} initializer;
-}*/
-
 TEST(ExpressionParser, BasicBooleanOperations) {
 	// Test simple AND, OR, NOT operations
 	string test_code = "a & b | ~c";
