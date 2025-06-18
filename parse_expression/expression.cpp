@@ -80,7 +80,9 @@ void expression::readLiteral(tokenizer &tokens, int next, void *data) {
 void expression::parse(tokenizer &tokens, void *data) {
 	tokens.syntax_start(this);
 
-	if (not precedence.isValidLevel(level)) {
+	if (precedence.operations.empty()) {
+		tokens.internal("operator precedence not initialized", __FILE__, __LINE__);
+	} else if (not precedence.isValidLevel(level)) {
 		tokens.internal("invalid expression level", __FILE__, __LINE__);
 	} else if (precedence.isTernary(level)) {
 		tokens.increment(false);
