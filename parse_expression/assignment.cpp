@@ -14,6 +14,8 @@
 
 namespace parse_expression {
 
+int assignment::lvalueLevel = 0;
+
 assignment::assignment() {
 	debug_name = "assignment";
 }
@@ -42,7 +44,7 @@ void assignment::parse(tokenizer &tokens, void *data) {
 	tokens.expect<expression>();
 
 	if (tokens.decrement(__FILE__, __LINE__, data)) {
-		lvalue.push_back(expression(tokens, 12, data));
+		lvalue.push_back(expression(tokens, lvalueLevel, data));
 	}
 
 	while (tokens.decrement(__FILE__, __LINE__, data)) {
@@ -55,7 +57,7 @@ void assignment::parse(tokenizer &tokens, void *data) {
 		tokens.expect<expression>();
 
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
-			lvalue.push_back(expression(tokens, 12, data));
+			lvalue.push_back(expression(tokens, lvalueLevel, data));
 		}
 	}
 

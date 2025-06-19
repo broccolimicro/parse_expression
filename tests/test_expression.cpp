@@ -230,3 +230,20 @@ TEST(ExpressionParser, Function) {
 	EXPECT_EQ(expr.to_string(), "a+y.x[3].myfunc(x,y)[3].z");
 }
 
+TEST(ExpressionParser, RightUnary) {
+	// Test numbers in expressions
+	string test_code = "A[Y?]!X?";
+	
+	expression::register_precedence(createPrecedence());
+	
+	tokenizer tokens;
+	tokens.register_token<parse::block_comment>(false);
+	tokens.register_token<parse::line_comment>(false);
+	expression::register_syntax(tokens);
+	tokens.insert("right_unary_test", test_code);
+	
+	expression expr(tokens);
+	EXPECT_TRUE(tokens.is_clean());
+	EXPECT_TRUE(expr.valid);
+	EXPECT_EQ(expr.to_string(), "A[Y?]!X?");
+}

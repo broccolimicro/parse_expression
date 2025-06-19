@@ -35,7 +35,7 @@ struct operation_set {
 		UNDEF    = -1, // This is an error case
 		TERNARY  =  0, // Uses trigger and infix
 		BINARY   =  1, // Uses infix
-		UNARY    =  2, // Uses prefix
+		UNARY    =  2, // Uses prefix or postfix
 		// array in dex, call, isochronic region
 		MODIFIER =  3, // Uses trigger, infix, and postfix
 		// array

@@ -23,6 +23,8 @@ struct assignment : parse::syntax
 	assignment(tokenizer &tokens, void *data = NULL);
 	~assignment();
 
+	static int lvalueLevel;
+
 	vector<expression> lvalue;
 	expression rvalue;
 	string operation;

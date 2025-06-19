@@ -190,12 +190,18 @@ void expression::parse(tokenizer &tokens, void *data) {
 		tokens.increment(true);
 		expectLiteral(tokens, -1);
 
-		tokens.increment(false);
+		bool hasPrefix = false;
 		for (int i = 0; i < (int)precedence.at(level).size(); i++) {
-			tokens.expect(precedence.at(level, i).prefix);
+			if (not precedence.at(level, i).prefix.empty()) {
+				if (not hasPrefix) {
+					tokens.increment(false);
+					hasPrefix = true;
+				}
+				tokens.expect(precedence.at(level, i).prefix);
+			}
 		}
 
-		while (tokens.decrement(__FILE__, __LINE__, data)) {
+		while (hasPrefix and tokens.decrement(__FILE__, __LINE__, data)) {
 			string tok = tokens.next();
 			vector<int> match;
 			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
@@ -215,12 +221,51 @@ void expression::parse(tokenizer &tokens, void *data) {
 
 			tokens.increment(false);
 			for (auto i = 0; i < (int)precedence.at(level).size(); i++) {
-				tokens.expect(precedence.at(level, i).prefix);
+				if (not precedence.at(level, i).prefix.empty()) {
+					tokens.expect(precedence.at(level, i).prefix);
+				}
 			}
 		}
 
 		if (tokens.decrement(__FILE__, __LINE__, data)) {
 			readLiteral(tokens, -1, data);
+		}
+
+		bool hasPostfix = false;
+		for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+			if (not precedence.at(level, i).postfix.empty()) {
+				if (not hasPostfix) {
+					tokens.increment(false);
+					hasPostfix = true;
+				}
+				tokens.expect(precedence.at(level, i).postfix);
+			}
+		}
+
+		while (hasPostfix and tokens.decrement(__FILE__, __LINE__, data)) {
+			string tok = tokens.next();
+			vector<int> match;
+			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
+				if (precedence.at(level, i).postfix == tok) {
+					match.push_back(i);
+				}
+			}
+
+			if (match.size() != 1u) {
+				tokens.internal("ambiguous unary operators", __FILE__, __LINE__);
+				if (match.empty()) {
+					return;
+				}
+			}
+
+			operators.push_back(match[0]);
+
+			tokens.increment(false);
+			for (auto i = 0; i < (int)precedence.at(level).size(); i++) {
+				if (not precedence.at(level, i).postfix.empty()) {
+					tokens.expect(precedence.at(level, i).postfix);
+				}
+			}
 		}
 	} else if (precedence.isModifier(level)) {
 		tokens.increment(false);
@@ -461,6 +506,10 @@ string expression::to_string(int prev_level, string tab) const {
 		}
 
 		result += arguments[0].to_string(level, tab);
+
+		for (int i = 0; i < (int)operators.size(); i++) {
+			result += precedence.at(level, operators[i]).postfix;
+		}
 	} else if (precedence.isModifier(level)) {
 		result += arguments[0].to_string(level, tab) + precedence.at(level, operators[0]).trigger;
 		for (int i = 1; i < (int)arguments.size(); i++) {

@@ -6,7 +6,7 @@ precedence_set createPrecedence() {
 	result.push_back("[", "", ",", "]");
 
 	result.push(operation_set::TERNARY);
-	result.push_back("", "?", ":", "");
+	result.push_back("", "@", ":", "");
 
 	result.push(operation_set::BINARY);
 	result.push_back("", "", "|", "");
@@ -47,13 +47,18 @@ precedence_set createPrecedence() {
 	result.push_back("", "", "/", "");
 	result.push_back("", "", "%", "");
 
+	result.push(operation_set::MODIFIER);
+	result.push_back("", "!", "", "");
+
 	result.push(operation_set::UNARY);
 	result.push_back("!", "", "", "");
 	result.push_back("~", "", "", "");
 	result.push_back("(bool)", "", "", "");
 	result.push_back("+", "", "", "");
 	result.push_back("-", "", "", "");
-	result.push_back("?", "", "", "");
+
+	result.push(operation_set::UNARY);
+	result.push_back("", "", "", "?");
 
 	result.push(operation_set::MODIFIER);
 	result.push_back("", "'", "", "");
