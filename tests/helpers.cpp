@@ -47,9 +47,6 @@ precedence_set createPrecedence() {
 	result.push_back("", "", "/", "");
 	result.push_back("", "", "%", "");
 
-	result.push(operation_set::MODIFIER);
-	result.push_back("", "!", "", "");
-
 	result.push(operation_set::UNARY);
 	result.push_back("!", "", "", "");
 	result.push_back("~", "", "", "");
@@ -57,7 +54,11 @@ precedence_set createPrecedence() {
 	result.push_back("+", "", "", "");
 	result.push_back("-", "", "", "");
 
+	result.push(operation_set::MODIFIER);
+	result.push_back("", "!", "", "");
+
 	result.push(operation_set::UNARY);
+	result.push_back("#", "", "", "");
 	result.push_back("", "", "", "?");
 
 	result.push(operation_set::MODIFIER);
