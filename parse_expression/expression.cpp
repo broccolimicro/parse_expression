@@ -451,7 +451,9 @@ bool expression::is_next(tokenizer &tokens, int i, void *data) {
 	for (int j = level+1; j < (int)precedence.size(); j++) {
 		if (precedence.isUnary(j)) {
 			for (int k = 0; k < (int)precedence.at(j).size(); k++) {
-				result = result or tokens.is_next(precedence.at(j, k).prefix, i);
+				if (not precedence.at(j, k).prefix.empty()) {
+					result = result or tokens.is_next(precedence.at(j, k).prefix, i);
+				}
 			}
 		}
 	}
