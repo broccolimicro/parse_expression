@@ -20,7 +20,7 @@ struct composition : parse::syntax
 	composition(tokenizer &tokens, int level = 0, void *data = NULL);
 	~composition();
 
-	void init();
+	static void init();
 
 	vector<composition> compositions;
 	vector<assignment> literals;
