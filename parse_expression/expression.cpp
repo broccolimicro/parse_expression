@@ -45,6 +45,8 @@ void expression::expectLiteral(tokenizer &tokens, int next) {
 		tokens.expect<parse::number>();
 		tokens.expect("false");
 		tokens.expect("true");
+		tokens.expect("gnd");
+		tokens.expect("vdd");
 		tokens.expect("(");
 	}
 }
@@ -56,7 +58,7 @@ void expression::readLiteral(tokenizer &tokens, int next, void *data) {
 		arguments.push_back(argument::literalOf(tokens.next()));
 	} else if (tokens.found<parse::number>()) {
 		arguments.push_back(argument::constantOf(tokens.next()));
-	} else if (tokens.found("false") or tokens.found("true")) {
+	} else if (tokens.found("false") or tokens.found("true") or tokens.found("vdd") or tokens.found("gnd")) {
 		arguments.push_back(argument::constantOf(tokens.next()));
 	} else if (tokens.found("(")) {
 		tokens.next();
@@ -432,6 +434,7 @@ bool expression::is_next(tokenizer &tokens, int i, void *data) {
 		or tokens.is_next("interface", i)
 		or tokens.is_next("context", i)
 		or tokens.is_next("await", i) 
+		or tokens.is_next("if", i) 
 		or tokens.is_next("while", i)
 		or tokens.is_next("region", i)
 		or tokens.is_next("assume", i)
@@ -478,7 +481,7 @@ string expression::to_string(string tab) const {
 
 string expression::to_string(int prev_level, string tab) const {
 	if (!valid or arguments.size() == 0)
-		return "false";
+		return "gnd";
 
 	string result = "";
 	bool paren = prev_level > level;
@@ -575,7 +578,7 @@ string argument::to_string(int level, string tab) const {
 	} else if (not constant.empty()) {
 		return constant;
 	}
-	return "true";
+	return "vdd";
 }
 
 }
