@@ -377,7 +377,7 @@ void expression::parse(tokenizer &tokens, void *data) {
 			}
 
 			if (match.size() != 1u) {
-				tokens.internal("ambiguous unary operators", __FILE__, __LINE__);
+				tokens.internal("ambiguous group operators", __FILE__, __LINE__);
 				if (match.empty()) {
 					return;
 				}
@@ -452,11 +452,9 @@ bool expression::is_next(tokenizer &tokens, int i, void *data) {
 	}
 
 	for (int j = level+1; j < (int)precedence.size(); j++) {
-		if (precedence.isUnary(j)) {
-			for (int k = 0; k < (int)precedence.at(j).size(); k++) {
-				if (not precedence.at(j, k).prefix.empty()) {
-					result = result or tokens.is_next(precedence.at(j, k).prefix, i);
-				}
+		for (int k = 0; k < (int)precedence.at(j).size(); k++) {
+			if (not precedence.at(j, k).prefix.empty()) {
+				result = result or tokens.is_next(precedence.at(j, k).prefix, i);
 			}
 		}
 	}
@@ -526,7 +524,7 @@ string expression::to_string(int prev_level, string tab) const {
 		result += precedence.at(level, operators[0]).postfix;
 	} else if (precedence.isGroup(level)) {
 		result += precedence.at(level, operators[0]).prefix;
-		for (int i = 0; i < (int)arguments.size() and i-1 < (int)operators.size(); i++) {
+		for (int i = 0; i < (int)arguments.size(); i++) {
 			if (i != 0) {
 				result += precedence.at(level, operators[0]).infix;
 			}
