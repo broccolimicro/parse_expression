@@ -20,7 +20,7 @@ struct operation {
 	string to_string() const;
 };
 
-ostream &operator<<(ostream &os, operation &o);
+ostream &operator<<(ostream &os, const operation &o);
 
 bool operator==(operation o0, operation o1);
 bool operator!=(operation o0, operation o1);
@@ -49,6 +49,8 @@ struct operation_set {
 	void push(operation op);
 	int find(operation op) const;
 };
+
+ostream &operator<<(ostream &os, const operation_set &s);
 
 struct precedence_set {
 	precedence_set();
@@ -84,6 +86,7 @@ struct precedence_set {
 	bool empty() const;
 };
 
+ostream &operator<<(ostream &os, const precedence_set &s);
 
 }
 

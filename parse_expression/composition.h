@@ -25,13 +25,13 @@ struct composition_t : parse::syntax {
 	static vector<string> precedence;
 
 	composition_t() {
-		debug_name = "composition";
+		debug_name = "composition_" + ::to_string(group);
 		level = 0;
 		init();
 	}
 
 	composition_t(tokenizer &tokens, int level=0, void *data=nullptr) {
-		debug_name = "composition";
+		debug_name = "composition_" + ::to_string(group);
 		this->level = level;
 		init();
 		parse(tokens, data);

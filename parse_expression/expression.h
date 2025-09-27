@@ -28,12 +28,12 @@ struct expression_t : parse::syntax {
 	static precedence_set precedence;
 
 	expression_t() {
-		debug_name = "expression";
+		debug_name = "expression_" + ::to_string(group);
 		level = 0;
 	}
 
 	expression_t(tokenizer &tokens, int level=0, void *data=nullptr) {
-		debug_name = "expression";
+		debug_name = "expression_" + ::to_string(group);
 		this->level = level;
 		parse(tokens, data);
 	}

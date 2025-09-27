@@ -25,11 +25,11 @@ struct assignment_t : parse::syntax {
 	string region;
 
 	assignment_t() {
-		debug_name = "assignment";
+		debug_name = "assignment_" + ::to_string(group);
 	}
 
 	assignment_t(tokenizer &tokens, void *data=nullptr) {
-		debug_name = "assignment";
+		debug_name = "assignment_" + ::to_string(group);
 		parse(tokens, data);
 	}
 

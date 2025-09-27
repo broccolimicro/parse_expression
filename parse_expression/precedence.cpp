@@ -49,7 +49,7 @@ string operation::to_string() const {
 	return result;
 }
 
-ostream &operator<<(ostream &os, operation &o) {
+ostream &operator<<(ostream &os, const operation &o) {
 	os << o.to_string();
 	return os;
 }
@@ -88,6 +88,18 @@ int operation_set::find(operation op) const {
 		}
 	}
 	return -1;
+}
+
+ostream &operator<<(ostream &os, const operation_set &s) {
+	os << s.type << "[";
+	for (size_t i = 0; i < s.symbols.size(); i++) {
+		if (i != 0) {
+			os << "  ";
+		}
+		os << s.symbols[i];
+	}
+	os << "]";
+	return os;
 }
 
 precedence_set::precedence_set() {
@@ -160,6 +172,15 @@ size_t precedence_set::size() const {
 
 bool precedence_set::empty() const {
 	return operations.empty();
+}
+
+ostream &operator<<(ostream &os, const precedence_set &s) {
+	os << "{" << endl;
+	for (size_t i = 0; i < s.operations.size(); i++) {
+		os << "\t" << s.operations[i] << endl;
+	}
+	os << "}";
+	return os;
 }
 
 }
