@@ -1,5 +1,7 @@
 #include "helpers.h"
 
+using namespace parse_expression;
+
 precedence_set createPrecedence() {
 	precedence_set result;
 	result.push(operation_set::GROUP);

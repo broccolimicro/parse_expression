@@ -81,6 +81,7 @@ struct precedence_set {
 	bool isValidLevel(int level) const;
 
 	size_t size() const;
+	bool empty() const;
 };
 
 

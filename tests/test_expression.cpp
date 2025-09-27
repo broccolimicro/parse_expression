@@ -8,7 +8,8 @@
 #include "helpers.h"
 
 using namespace std;
-using namespace parse_expression;
+
+using expression=parse_expression::expression_t<>;
 
 TEST(ExpressionParser, BasicBooleanOperations) {
 	// Test simple AND, OR, NOT operations

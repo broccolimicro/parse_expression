@@ -158,4 +158,8 @@ size_t precedence_set::size() const {
 	return operations.size();
 }
 
+bool precedence_set::empty() const {
+	return operations.empty();
+}
+
 }

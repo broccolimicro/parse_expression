@@ -8,18 +8,17 @@
 #include "helpers.h"
 
 using namespace std;
-using namespace parse_expression;
 
-//==============================================================================
-// Assignment Tests
-//==============================================================================
+using expression=parse_expression::expression_t<>;
+using assignment=parse_expression::assignment_t<>;
+using composition=parse_expression::composition_t<>;
 
 TEST(AssignmentParser, BasicAssignment) {
 	// Test basic assignment with + operation
 	string test_code = "a+";
 
 	expression::register_precedence(createPrecedence());
-	parse_expression::assignment::lvalueLevel = 15;
+	assignment::lvalueLevel = 15;
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -39,7 +38,7 @@ TEST(AssignmentParser, RemovalOperation) {
 	string test_code = "a-";
 	
 	expression::register_precedence(createPrecedence());
-	parse_expression::assignment::lvalueLevel = 15;
+	assignment::lvalueLevel = 15;
 
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -57,7 +56,7 @@ TEST(AssignmentParser, ComplexVariableName) {
 	string test_code = "module.signal[3]+";
 
 	expression::register_precedence(createPrecedence());
-	parse_expression::assignment::lvalueLevel = 15;
+	assignment::lvalueLevel = 15;
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -76,7 +75,7 @@ TEST(AssignmentParser, AssignmentWithExpression) {
 	string test_code = "d = a & b | c";
 
 	expression::register_precedence(createPrecedence());
-	parse_expression::assignment::lvalueLevel = 15;
+	assignment::lvalueLevel = 15;
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -95,7 +94,7 @@ TEST(AssignmentParser, FunctionCall) {
 	string test_code = "v1=f0(a & b, c | d)";
 	
 	expression::register_precedence(createPrecedence());
-	parse_expression::assignment::lvalueLevel = 15;
+	assignment::lvalueLevel = 15;
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -118,7 +117,7 @@ TEST(CompositionParser, ParallelComposition) {
 	string test_code = "a+, b+, c-";
 	
 	expression::register_precedence(createPrecedence());
-	parse_expression::assignment::lvalueLevel = 15;
+	assignment::lvalueLevel = 15;
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -137,7 +136,7 @@ TEST(CompositionParser, InternalChoice) {
 	string test_code = "(a+) : (b-)";
 	
 	expression::register_precedence(createPrecedence());
-	parse_expression::assignment::lvalueLevel = 15;
+	assignment::lvalueLevel = 15;
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -156,7 +155,7 @@ TEST(CompositionParser, NestedComposition) {
 	string test_code = "(a+, b+) : (c-, (d+ : e+))";
 	
 	expression::register_precedence(createPrecedence());
-	parse_expression::assignment::lvalueLevel = 15;
+	assignment::lvalueLevel = 15;
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
@@ -175,7 +174,7 @@ TEST(CompositionParser, ComplexComposition) {
 	string test_code = "(a = x & y, b-) : (e = c & d @ f : g)";
 	
 	expression::register_precedence(createPrecedence());
-	parse_expression::assignment::lvalueLevel = 15;
+	assignment::lvalueLevel = 15;
 	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
