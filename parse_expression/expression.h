@@ -50,23 +50,20 @@ struct expression_t : parse::syntax {
 		} else {
 			tokens.expect<instance_t>();
 			tokens.expect<number_t>();
-			tokens.expect("false");
-			tokens.expect("true");
-			tokens.expect("gnd");
-			tokens.expect("vdd");
 			tokens.expect("(");
 		}
 	}
 
-	void readLiteral(tokenizer &tokens, int next, void *data=nullptr) {
+	void readLiteral(tokenizer &tokens, int next, operation::ArgType argType, void *data=nullptr) {
 		if (tokens.found<expression>()) {
 			arguments.push_back(argument(expression(tokens, (next < 0 ? level+1 : next), data)));
-		} else if (tokens.found<instance_t>()) {
+		} else if (tokens.found<number_t>()
+			or (tokens.found<instance_t>() and argType == operation::LABEL)
+			or tokens.found("false") or tokens.found("true")
+			or tokens.found("vdd") or tokens.found("gnd")) {
+			arguments.push_back(argument::constantOf(tokens.next()));
+		} else if (tokens.found<instance_t>() and argType != operation::LABEL) {
 			arguments.push_back(argument::literalOf(tokens.next()));
-		} else if (tokens.found<number_t>()) {
-			arguments.push_back(argument::constantOf(tokens.next()));
-		} else if (tokens.found("false") or tokens.found("true") or tokens.found("vdd") or tokens.found("gnd")) {
-			arguments.push_back(argument::constantOf(tokens.next()));
 		} else if (tokens.found("(")) {
 			tokens.next();
 
@@ -103,7 +100,7 @@ struct expression_t : parse::syntax {
 			expectLiteral(tokens, -1);
 
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
-				readLiteral(tokens, -1, data);
+				readLiteral(tokens, -1, operation::LITERAL, data);
 			}
 
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
@@ -127,7 +124,7 @@ struct expression_t : parse::syntax {
 				expectLiteral(tokens, -1);
 				
 				if (tokens.decrement(__FILE__, __LINE__, data)) {
-					readLiteral(tokens, -1, data);
+					readLiteral(tokens, -1, operation::LITERAL, data);
 				}
 
 				if (tokens.decrement(__FILE__, __LINE__, data)) {
@@ -149,7 +146,7 @@ struct expression_t : parse::syntax {
 				}
 
 				if (tokens.decrement(__FILE__, __LINE__, data)) {
-					readLiteral(tokens, -1, data);
+					readLiteral(tokens, -1, operation::LITERAL, data);
 				}
 			}
 		} else if (precedence.isBinary(level)) {
@@ -162,7 +159,7 @@ struct expression_t : parse::syntax {
 			expectLiteral(tokens, -1);
 
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
-				readLiteral(tokens, -1, data);
+				readLiteral(tokens, -1, operation::LITERAL, data);
 			}
 
 			while (tokens.decrement(__FILE__, __LINE__, data)) {
@@ -192,7 +189,7 @@ struct expression_t : parse::syntax {
 				expectLiteral(tokens, -1);
 
 				if (tokens.decrement(__FILE__, __LINE__, data)) {
-					readLiteral(tokens, -1, data);
+					readLiteral(tokens, -1, operation::LITERAL, data);
 				}
 			}
 		} else if (precedence.isUnary(level)) {
@@ -237,7 +234,7 @@ struct expression_t : parse::syntax {
 			}
 
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
-				readLiteral(tokens, -1, data);
+				readLiteral(tokens, -1, operation::LITERAL, data);
 			}
 
 			bool hasPostfix = false;
@@ -277,20 +274,53 @@ struct expression_t : parse::syntax {
 				}
 			}
 		} else if (precedence.isModifier(level)) {
-			tokens.increment(false);
+			bool hasPrefix = false;
+			vector<int> found;
+
 			for (int i = 0; i < (int)precedence.at(level).size(); i++) {
-				tokens.expect(precedence.at(level, i).trigger);
+				found.push_back(i);
+				if (not precedence.at(level, i).prefix.empty()) {
+					if (not hasPrefix) {
+						tokens.increment(false);
+						hasPrefix = true;
+					}
+					tokens.expect(precedence.at(level, i).prefix);
+				}
+			}
+
+			if (hasPrefix) {
+				if (tokens.decrement(__FILE__, __LINE__, data)) {
+					for (int i = found.size()-1; i >= 0; i--) {
+						if (precedence.at(level, found[i]).prefix.empty()
+							or not tokens.found(precedence.at(level, found[i]).prefix)) {
+							found.erase(found.begin()+i);
+						}
+					}
+				} else {
+					for (int i = found.size()-1; i >= 0; i--) {
+						if (not precedence.at(level, found[i]).prefix.empty()) {
+							found.erase(found.begin()+i);
+						}
+					}
+				}
+			}
+
+			if (not found.empty()) {
+				tokens.increment(false);
+				for (int i = 0; i < (int)found.size(); i++) {
+					tokens.expect(precedence.at(level, found[i]).trigger);
+				}
 			}
 
 			tokens.increment(true);
 			expectLiteral(tokens, -1);
 
 			if (tokens.decrement(__FILE__, __LINE__, data)) {
-				readLiteral(tokens, -1, data);
+				readLiteral(tokens, -1, operation::LITERAL, data);
 			}
 
 			bool first = true;
-			while (tokens.decrement(__FILE__, __LINE__, data)) {
+			while (not found.empty() and tokens.decrement(__FILE__, __LINE__, data)) {
 				if (not first) {
 					expression sub = *this;
 					sub.valid = true;
@@ -302,8 +332,8 @@ struct expression_t : parse::syntax {
 
 				string tok = tokens.next();
 				vector<int> match;
-				for (int i = 0; i < (int)precedence.at(level).size(); i++) {
-					if (precedence.at(level, i).trigger == tok) {
+				for (int i = 0; i < (int)found.size(); i++) {
+					if (precedence.at(level, found[i]).trigger == tok) {
 						match.push_back(i);
 					}
 				}
@@ -319,9 +349,9 @@ struct expression_t : parse::syntax {
 
 				if (not precedence.at(level, match[0]).postfix.empty()) {
 					tokens.increment(true);
-					for (int i = 0; i < (int)precedence.at(level).size(); i++) {
-						if (not precedence.at(level, i).postfix.empty()) {
-							tokens.expect(precedence.at(level, i).postfix);
+					for (int i = 0; i < (int)found.size(); i++) {
+						if (not precedence.at(level, found[i]).postfix.empty()) {
+							tokens.expect(precedence.at(level, found[i]).postfix);
 						}
 					}
 				}
@@ -331,7 +361,7 @@ struct expression_t : parse::syntax {
 					expectLiteral(tokens, 0);
 
 					if (tokens.decrement(__FILE__, __LINE__, data)) {
-						readLiteral(tokens, 0, data);
+						readLiteral(tokens, 0, precedence.at(level, match[0]).rightType, data);
 
 						tokens.increment(false);
 						tokens.expect(precedence.at(level, match[0]).infix);
@@ -346,7 +376,7 @@ struct expression_t : parse::syntax {
 							expectLiteral(tokens, 0);
 
 							if (tokens.decrement(__FILE__, __LINE__, data)) {
-								readLiteral(tokens, 0, data);
+								readLiteral(tokens, 0, precedence.at(level, match[0]).rightType, data);
 							}
 						}
 					}
@@ -355,7 +385,7 @@ struct expression_t : parse::syntax {
 					expectLiteral(tokens, -1);
 
 					if (tokens.decrement(__FILE__, __LINE__, data)) {
-						readLiteral(tokens, -1, data);
+						readLiteral(tokens, -1, precedence.at(level, match[0]).rightType, data);
 					}
 				}
 
@@ -364,8 +394,8 @@ struct expression_t : parse::syntax {
 				}
 
 				tokens.increment(false);
-				for (int i = 0; i < (int)precedence.at(level).size(); i++) {
-					tokens.expect(precedence.at(level, i).trigger);
+				for (int i = 0; i < (int)found.size(); i++) {
+					tokens.expect(precedence.at(level, found[i]).trigger);
 				}
 			}
 		} else if (precedence.isGroup(level)) {
@@ -399,7 +429,7 @@ struct expression_t : parse::syntax {
 				expectLiteral(tokens, 0);
 
 				if (tokens.decrement(__FILE__, __LINE__, data)) {
-					readLiteral(tokens, 0, data);
+					readLiteral(tokens, 0, operation::LITERAL, data);
 
 					tokens.increment(false);
 					tokens.expect(precedence.at(level, match[0]).infix);
@@ -414,7 +444,7 @@ struct expression_t : parse::syntax {
 						expectLiteral(tokens, 0);
 
 						if (tokens.decrement(__FILE__, __LINE__, data)) {
-							readLiteral(tokens, 0, data);
+							readLiteral(tokens, 0, operation::LITERAL, data);
 						}
 					}
 				}
@@ -427,7 +457,7 @@ struct expression_t : parse::syntax {
 				expectLiteral(tokens, -1);
 
 				if (tokens.decrement(__FILE__, __LINE__, data)) {
-					readLiteral(tokens, -1, data);
+					readLiteral(tokens, -1, operation::LITERAL, data);
 				}
 			}
 		}

@@ -17,11 +17,13 @@ namespace parse_expression
 operation::operation() {
 }
 
-operation::operation(string prefix, string trigger, string infix, string postfix) {
+operation::operation(string prefix, string trigger, string infix, string postfix, ArgType leftType, ArgType rightType) {
 	this->prefix = prefix;
 	this->trigger = trigger;
 	this->infix = infix;
 	this->postfix = postfix;
+	this->leftType = leftType;
+	this->rightType = rightType;
 }
 
 operation::~operation() {
@@ -73,8 +75,8 @@ operation_set::operation_set(int type) {
 operation_set::~operation_set() {
 }
 
-void operation_set::push(string prefix, string trigger, string infix, string postfix) {
-	push(operation(prefix, trigger, infix, postfix));
+void operation_set::push(string prefix, string trigger, string infix, string postfix, operation::ArgType leftType, operation::ArgType rightType) {
+	push(operation(prefix, trigger, infix, postfix, leftType, rightType));
 }
 
 void operation_set::push(operation op) {
@@ -158,8 +160,8 @@ void precedence_set::push(int type) {
 	operations.push_back(operation_set(type));
 }
 
-void precedence_set::push_back(string prefix, string trigger, string infix, string postfix) {
-	operations.back().push(prefix, trigger, infix, postfix);
+void precedence_set::push_back(string prefix, string trigger, string infix, string postfix, operation::ArgType leftType, operation::ArgType rightType) {
+	operations.back().push(prefix, trigger, infix, postfix, leftType, rightType);
 }
 
 bool precedence_set::isValidLevel(int level) const {

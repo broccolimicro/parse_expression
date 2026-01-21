@@ -1,6 +1,6 @@
 NAME          = parse_expression
-DEPEND        = parse_ucs parse common
-TEST_DEPEND   = parse_ucs parse common
+DEPEND        = parse common
+TEST_DEPEND   = parse common
 
 COVERAGE ?= 0
 

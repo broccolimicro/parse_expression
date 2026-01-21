@@ -6,9 +6,20 @@
 namespace parse_expression {
 
 struct operation {
+	enum ArgType {
+		MODULE = 0,
+		TYPE = 1,
+		TERM = 2,
+		LABEL = 3,
+		LITERAL = 4
+	};
+
 	operation();
-	operation(string prefix, string trigger, string infix, string postfix);
+	operation(string prefix, string trigger, string infix, string postfix, ArgType leftType=LITERAL, ArgType rightType=LITERAL);
 	~operation();
+
+	ArgType leftType;
+	ArgType rightType;
 
 	string prefix;
 	string trigger;
@@ -36,8 +47,8 @@ struct operation_set {
 		TERNARY  =  0, // Uses trigger and infix
 		BINARY   =  1, // Uses infix
 		UNARY    =  2, // Uses prefix or postfix
-		// array in dex, call, isochronic region
-		MODIFIER =  3, // Uses trigger, infix, and postfix
+		// array index, call, isochronic region
+		MODIFIER =  3, // Uses prefix, trigger, infix, and postfix
 		// array
 		GROUP    =  4  // Uses prefix, infix, and postfix
 	};
@@ -45,7 +56,7 @@ struct operation_set {
 	int type;
 	vector<operation> symbols;
 
-	void push(string prefix, string trigger, string infix, string postfix);
+	void push(string prefix, string trigger, string infix, string postfix, operation::ArgType leftType=operation::LITERAL, operation::ArgType rightType=operation::LITERAL);
 	void push(operation op);
 	int find(operation op) const;
 };
@@ -78,7 +89,7 @@ struct precedence_set {
 	const operation &at(index i) const;
 
 	void push(int type);
-	void push_back(string prefix, string trigger, string infix, string postfix);
+	void push_back(string prefix, string trigger, string infix, string postfix, operation::ArgType leftType=operation::LITERAL, operation::ArgType rightType=operation::LITERAL);
 
 	bool isValidLevel(int level) const;
 
