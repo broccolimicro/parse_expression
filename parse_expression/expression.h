@@ -484,8 +484,8 @@ struct expression_t : parse::syntax {
 	}
 
 	string to_string(int prev_level, string tab="") const {
-		if (!valid or arguments.size() == 0)
-			return "gnd";
+		if (not valid or arguments.empty())
+			return "undef";
 
 		string result = "";
 		bool paren = prev_level > level and not precedence.isGroup(prev_level);
@@ -493,8 +493,8 @@ struct expression_t : parse::syntax {
 			result += "(";
 		}
 
-		if (level < 0 or arguments.empty()) {
-			result += "???";
+		if (level < 0) {
+			result += "undef";
 		} else if (operators.empty()) {
 			result += arguments[0].to_string(level, tab);
 		} else if (precedence.isTernary(level)) {
@@ -539,7 +539,7 @@ struct expression_t : parse::syntax {
 			}
 			result += precedence.at(level, operators[0]).postfix;
 		} else {
-			result += "???";
+			result += "undef";
 		}
 
 		if (paren)
