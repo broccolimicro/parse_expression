@@ -7,11 +7,10 @@ namespace parse_expression {
 
 struct operation {
 	enum ArgType {
-		MODULE = 0,
-		TYPE = 1,
-		TERM = 2,
-		LABEL = 3,
-		LITERAL = 4
+		TYPE = 0,
+		TERM = 1,
+		LABEL = 2,
+		LITERAL = 3
 	};
 
 	operation();
@@ -75,7 +74,6 @@ struct precedence_set {
 	vector<operation_set> operations;
 
 	int type(int level) const;
-	bool typeIs(int level, int t) const;
 
 	bool isTernary(int level) const;
 	bool isBinary(int level) const;

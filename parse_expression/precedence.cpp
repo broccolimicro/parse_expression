@@ -110,6 +110,10 @@ precedence_set::precedence_set() {
 precedence_set::~precedence_set() {
 }
 
+int precedence_set::type(int level) const {
+	return operations[level].type;
+}
+
 bool precedence_set::isTernary(int level) const {
 	return operations[level].type == operation_set::TERNARY;
 }

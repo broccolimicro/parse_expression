@@ -19,7 +19,6 @@ struct composition_t : parse::syntax {
 	vector<composition> compositions;
 	vector<assignment> literals;
 	vector<expression> guards;
-	string region;
 	int level;
 
 	static vector<string> precedence;
@@ -87,9 +86,6 @@ struct composition_t : parse::syntax {
 					if (tokens.found("(")) {
 						tokens.next();
 
-						tokens.increment(false);
-						tokens.expect("'");
-
 						tokens.increment(true);
 						tokens.expect(")");
 
@@ -102,17 +98,6 @@ struct composition_t : parse::syntax {
 
 						if (tokens.decrement(__FILE__, __LINE__, data)) {
 							tokens.next();
-						}
-
-						if (tokens.decrement(__FILE__, __LINE__, data)) {
-							tokens.next();
-
-							tokens.increment(true);
-							tokens.expect<parse::number>();
-
-							if (tokens.decrement(__FILE__, __LINE__, data)) {
-								compositions.back().region = tokens.next();
-							}
 						}
 					} else if (tokens.found<assignment>()) {
 						literals.push_back(assignment(tokens, data));
