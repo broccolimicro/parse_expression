@@ -2,114 +2,6 @@
 
 namespace parse_expression {
 
-default_literal::default_literal() {
-	this->debug_name = "literal";
-}
-
-default_literal::default_literal(tokenizer &tokens, void *data) {
-	this->debug_name = "literal";
-	parse(tokens, data);
-}
-
-default_literal::~default_literal() {
-}
-
-void default_literal::parse(tokenizer &tokens, void *data) {
-	tokens.syntax_start(this);
-	
-	tokens.increment(true);
-	tokens.expect<parse::instance>();
-	if (tokens.decrement(__FILE__, __LINE__)) {
-		name = tokens.next();
-	}
-
-	tokens.syntax_end(this);
-}
-
-bool default_literal::is_next(tokenizer &tokens, int i, void *data) {
-	return tokens.is_next<parse::instance>(i)
-		and not tokens.is_next("false", i)
-		and not tokens.is_next("true", i)
-		and not tokens.is_next("vdd", i)
-		and not tokens.is_next("gnd", i);
-}
-
-void default_literal::register_syntax(tokenizer &tokens) {
-	if (!tokens.syntax_registered<default_literal>()) {
-		tokens.register_token<parse::instance>();
-	}
-}
-
-string default_literal::to_string(string tab) const {
-	return name;
-}
-
-parse::syntax *default_literal::clone() const {
-	return new default_literal(*this);
-}
-
-default_constant::default_constant() {
-	this->debug_name = "constant";
-}
-
-default_constant::default_constant(tokenizer &tokens, void *data) {
-	this->debug_name = "constant";
-	parse(tokens, data);
-}
-
-default_constant::~default_constant() {
-}
-
-void default_constant::parse(tokenizer &tokens, void *data) {
-	tokens.syntax_start(this);
-	
-	tokens.increment(true);
-	tokens.expect<parse::number>();
-	tokens.expect("false");
-	tokens.expect("true");
-	tokens.expect("vdd");
-	tokens.expect("gnd");
-
-	if (tokens.decrement(__FILE__, __LINE__)) {
-		value = tokens.next();
-	}
-
-	tokens.syntax_end(this);
-}
-
-bool default_constant::is_next(tokenizer &tokens, int i, void *data) {
-	return tokens.is_next<parse::number>(i)
-		or tokens.is_next("false", i)
-		or tokens.is_next("true", i)
-		or tokens.is_next("vdd", i)
-		or tokens.is_next("gnd", i);
-}
-
-void default_constant::register_syntax(tokenizer &tokens) {
-	if (!tokens.syntax_registered<default_constant>()) {
-		tokens.register_token<parse::instance>();
-	}
-}
-
-string default_constant::to_string(string tab) const {
-	return value;
-}
-
-parse::syntax *default_constant::clone() const {
-	return new default_constant(*this);
-}
-
-context::context() {
-	data = nullptr;
-}
-
-context::context(precedence_set precedence, parse::schema constant, parse::schema literal, void *data)
-	: constant(constant), literal(literal), precedence(precedence), data(data) {
-}
-
-context::~context() {
-}
-
 expression::expression() {
 	debug_name = "expression";
 	level = 0;
@@ -125,22 +17,23 @@ expression::expression(const expression &copy) {
 	operators = copy.operators;
 	level = copy.level;
 	type = copy.type;
-	for (int i = 0; i < (int)copy.arguments.size(); i++) {
-		arguments.push_back(std::unique_ptr<parse::syntax>(copy.arguments[i]->clone()));
+	for (const argument &arg : copy.arguments) {
+		arguments.push_back({arg.type, std::shared_ptr<parse::syntax>(arg.ptr->clone())});
 	}
 }
 
-expression::expression(context &ctx, tokenizer &tokens, int level) {
+expression::expression(tokenizer &tokens, context ctx) {
 	debug_name = "expression";
-	this->level = level;
-	this->type = -1;
-	if (ctx.precedence.isValidLevel(level)) {
-		this->type = ctx.precedence.type(level);
-	}
-	parse(tokens, &ctx);
+	level = 0;
+	type = -1;
+	parse(tokens, ctx);
 }
 
 expression::~expression() {}
+
+context expression::sub(std::shared_ptr<config> cfg, int nextLevel) {
+	return context(cfg, nextLevel < 0 ? level+1 : nextLevel);
+}
 
 bool expression::isTernary() const {
 	return type == operation_set::TERNARY;
@@ -162,102 +55,117 @@ bool expression::isGroup() const {
 	return type == operation_set::GROUP;
 }
 
-void expression::expectLiteral(tokenizer &tokens, int next, context &ctx) {
-	if (ctx.precedence.isValidLevel(next < 0 ? level+1 : next)) {
-		tokens.expect<expression>(&ctx);
+void expression::expectLiteral(tokenizer &tokens, context ctx, std::vector<int> argType) {
+	if (ctx.cfg->order.isValidLevel(ctx.level)) {
+		tokens.expect<expression>(ctx);
 	} else {
-		if (not ctx.literal.empty()) {
-			tokens.expect(ctx.literal.label, ctx.data);
+		if (argType.empty()) {
+			argType = ctx.cfg->base;
 		}
-		if (not ctx.constant.empty()) {
-			tokens.expect(ctx.constant.label, ctx.data);
+
+		for (int arg : argType) {
+			ctx.cfg->literals[arg].expect(tokens);
 		}
 		tokens.expect("(");
 	}
 }
 
-void expression::readLiteral(tokenizer &tokens, int next, operation::ArgType argType, context &ctx) {
+void expression::readLiteral(tokenizer &tokens, context ctx, std::vector<int> argType) {
 	if (tokens.found<expression>()) {
-		arguments.push_back(std::make_unique<expression>(ctx, tokens, (next < 0 ? level+1 : next)));
-	} else if (tokens.found(ctx.constant.label)
-		or (tokens.found(ctx.literal.label) and argType == operation::LABEL)) {
-		arguments.push_back(std::unique_ptr<parse::syntax>(ctx.constant.factory(tokens, ctx.data)));
-	} else if (tokens.found(ctx.literal.label) and argType != operation::LABEL) {
-		arguments.push_back(std::unique_ptr<parse::syntax>(ctx.literal.factory(tokens, ctx.data)));
+		arguments.push_back({-1, std::make_shared<expression>(tokens, ctx)});
 	} else if (tokens.found("(")) {
+		context upCtx = sub(ctx.cfg, 0);
+
 		tokens.next();
 
 		tokens.increment(true);
 		tokens.expect(")");
 
 		tokens.increment(true);
-		tokens.expect<expression>(&ctx);
+		tokens.expect<expression>(upCtx);
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
-			arguments.push_back(std::make_unique<expression>(ctx, tokens, 0));
+			arguments.push_back({-1, std::make_shared<expression>(tokens, upCtx)});
 		}
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
 			tokens.next();
 		}
+	} else {
+		if (argType.empty()) {
+			argType = ctx.cfg->base;
+		}
+
+		for (int arg : argType) {
+			if (ctx.cfg->literals[arg].found(tokens)) {
+				arguments.push_back({arg, std::shared_ptr<parse::syntax>(ctx.cfg->literals[arg].produce(tokens))});
+				break;
+			}
+		}
 	}
 }
 
-void expression::parse(tokenizer &tokens, void *data) {
-	if (data == nullptr) {
+void expression::parse(tokenizer &tokens, std::any data) {
+	if (not data.has_value()) {
 		tokens.internal("expression has no context", __FILE__, __LINE__);
 		return;
 	}
-		
-	context *ctx = (context*)data;
+
+	std::shared_ptr<config> cfg = std::any_cast<context>(data).cfg;
+	level = std::any_cast<context>(data).level;
+	if (cfg->order.isValidLevel(level)) {
+		type = cfg->order.type(level);
+	}
 
 	tokens.syntax_start(this);
 
-	if (ctx->precedence.operations.empty()) {
+	if (cfg->order.operations.empty()) {
 		tokens.internal("operator precedence not initialized", __FILE__, __LINE__);
-	} else if (not ctx->precedence.isValidLevel(level)) {
+	} else if (not cfg->order.isValidLevel(level)) {
 		tokens.internal("invalid expression level", __FILE__, __LINE__);
-	} else if (ctx->precedence.isTernary(level)) {
+	} else if (cfg->order.isTernary(level)) {
+		context ctx = sub(cfg);
+
 		tokens.increment(false);
-		for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-			tokens.expect(ctx->precedence.at(level, i).trigger);
+		for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+			tokens.expect(cfg->order.at(level, i).trigger);
 		}
 
 		tokens.increment(true);
-		expectLiteral(tokens, -1, *ctx);
+		expectLiteral(tokens, ctx);
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
-			readLiteral(tokens, -1, operation::LITERAL, *ctx);
+			readLiteral(tokens, ctx);
 		}
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-				if (ctx->precedence.at(level, i).trigger == tok) {
+			for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+				if (cfg->order.at(level, i).trigger == tok) {
 					match.push_back(i);
 				}
 			}
 
 			tokens.increment(true);
-			expectLiteral(tokens, -1, *ctx);
+			expectLiteral(tokens, ctx);
 
 			tokens.increment(true);
 			for (int i = 0; i < (int)match.size(); i++) {
-				tokens.expect(ctx->precedence.at(level, match[i]).infix);
+				tokens.expect(cfg->order.at(level, match[i]).infix);
 			}
 
 			tokens.increment(true);
-			expectLiteral(tokens, -1, *ctx);
+			expectLiteral(tokens, ctx);
 			
 			if (tokens.decrement(__FILE__, __LINE__)) {
-				readLiteral(tokens, -1, operation::LITERAL, *ctx);
+				readLiteral(tokens, ctx);
 			}
 
 			if (tokens.decrement(__FILE__, __LINE__)) {
 				string tok = tokens.next();
 				for (int i = (int)match.size()-1; i >= 0; i--) {
-					if (ctx->precedence.at(level, match[i]).infix != tok) {
+					if (cfg->order.at(level, match[i]).infix != tok) {
 						match.erase(match.begin()+i);
 					}
 				}
@@ -269,31 +177,33 @@ void expression::parse(tokenizer &tokens, void *data) {
 					}
 				}
 
-				operators.push_back(ctx->precedence.at(level, match[0]));
+				operators.push_back(cfg->order.at(level, match[0]));
 			}
 
 			if (tokens.decrement(__FILE__, __LINE__)) {
-				readLiteral(tokens, -1, operation::LITERAL, *ctx);
+				readLiteral(tokens, ctx);
 			}
 		}
-	} else if (ctx->precedence.isBinary(level)) {
+	} else if (cfg->order.isBinary(level)) {
+		context ctx = sub(cfg);
+
 		tokens.increment(false);
-		for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-			tokens.expect(ctx->precedence.at(level, i).infix);
+		for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+			tokens.expect(cfg->order.at(level, i).infix);
 		}
 
 		tokens.increment(true);
-		expectLiteral(tokens, -1, *ctx);
+		expectLiteral(tokens, ctx);
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
-			readLiteral(tokens, -1, operation::LITERAL, *ctx);
+			readLiteral(tokens, ctx);
 		}
 
 		while (tokens.decrement(__FILE__, __LINE__)) {
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-				if (ctx->precedence.at(level, i).infix == tok) {
+			for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+				if (cfg->order.at(level, i).infix == tok) {
 					match.push_back(i);
 				}
 			}
@@ -305,40 +215,42 @@ void expression::parse(tokenizer &tokens, void *data) {
 				}
 			}
 
-			operators.push_back(ctx->precedence.at(level, match[0]));
+			operators.push_back(cfg->order.at(level, match[0]));
 
 			tokens.increment(false);
-			for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-				tokens.expect(ctx->precedence.at(level, i).infix);
+			for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+				tokens.expect(cfg->order.at(level, i).infix);
 			}
 
 			tokens.increment(true);
-			expectLiteral(tokens, -1, *ctx);
+			expectLiteral(tokens, ctx);
 
 			if (tokens.decrement(__FILE__, __LINE__)) {
-				readLiteral(tokens, -1, operation::LITERAL, *ctx);
+				readLiteral(tokens, ctx);
 			}
 		}
-	} else if (ctx->precedence.isUnary(level)) {
+	} else if (cfg->order.isUnary(level)) {
+		context ctx = sub(cfg);
+
 		tokens.increment(true);
-		expectLiteral(tokens, -1, *ctx);
+		expectLiteral(tokens, ctx);
 
 		bool hasPrefix = false;
-		for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-			if (not ctx->precedence.at(level, i).prefix.empty()) {
+		for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+			if (not cfg->order.at(level, i).prefix.empty()) {
 				if (not hasPrefix) {
 					tokens.increment(false);
 					hasPrefix = true;
 				}
-				tokens.expect(ctx->precedence.at(level, i).prefix);
+				tokens.expect(cfg->order.at(level, i).prefix);
 			}
 		}
 
 		while (hasPrefix and tokens.decrement(__FILE__, __LINE__)) {
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-				if (ctx->precedence.at(level, i).prefix == tok) {
+			for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+				if (cfg->order.at(level, i).prefix == tok) {
 					match.push_back(i);
 				}
 			}
@@ -350,36 +262,36 @@ void expression::parse(tokenizer &tokens, void *data) {
 				}
 			}
 
-			operators.push_back(ctx->precedence.at(level, match[0]));
+			operators.push_back(cfg->order.at(level, match[0]));
 
 			tokens.increment(false);
-			for (auto i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-				if (not ctx->precedence.at(level, i).prefix.empty()) {
-					tokens.expect(ctx->precedence.at(level, i).prefix);
+			for (auto i = 0; i < (int)cfg->order.at(level).size(); i++) {
+				if (not cfg->order.at(level, i).prefix.empty()) {
+					tokens.expect(cfg->order.at(level, i).prefix);
 				}
 			}
 		}
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
-			readLiteral(tokens, -1, operation::LITERAL, *ctx);
+			readLiteral(tokens, ctx);
 		}
 
 		bool hasPostfix = false;
-		for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-			if (not ctx->precedence.at(level, i).postfix.empty()) {
+		for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+			if (not cfg->order.at(level, i).postfix.empty()) {
 				if (not hasPostfix) {
 					tokens.increment(false);
 					hasPostfix = true;
 				}
-				tokens.expect(ctx->precedence.at(level, i).postfix);
+				tokens.expect(cfg->order.at(level, i).postfix);
 			}
 		}
 
 		while (hasPostfix and tokens.decrement(__FILE__, __LINE__)) {
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-				if (ctx->precedence.at(level, i).postfix == tok) {
+			for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+				if (cfg->order.at(level, i).postfix == tok) {
 					match.push_back(i);
 				}
 			}
@@ -391,41 +303,43 @@ void expression::parse(tokenizer &tokens, void *data) {
 				}
 			}
 
-			operators.push_back(ctx->precedence.at(level, match[0]));
+			operators.push_back(cfg->order.at(level, match[0]));
 
 			tokens.increment(false);
-			for (auto i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-				if (not ctx->precedence.at(level, i).postfix.empty()) {
-					tokens.expect(ctx->precedence.at(level, i).postfix);
+			for (auto i = 0; i < (int)cfg->order.at(level).size(); i++) {
+				if (not cfg->order.at(level, i).postfix.empty()) {
+					tokens.expect(cfg->order.at(level, i).postfix);
 				}
 			}
 		}
-	} else if (ctx->precedence.isModifier(level)) {
+	} else if (cfg->order.isModifier(level)) {
+		context ctx = sub(cfg);
+
 		bool hasPrefix = false;
 		vector<int> found;
 
-		for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
+		for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
 			found.push_back(i);
-			if (not ctx->precedence.at(level, i).prefix.empty()) {
+			if (not cfg->order.at(level, i).prefix.empty()) {
 				if (not hasPrefix) {
 					tokens.increment(false);
 					hasPrefix = true;
 				}
-				tokens.expect(ctx->precedence.at(level, i).prefix);
+				tokens.expect(cfg->order.at(level, i).prefix);
 			}
 		}
 
 		if (hasPrefix) {
 			if (tokens.decrement(__FILE__, __LINE__)) {
 				for (int i = found.size()-1; i >= 0; i--) {
-					if (ctx->precedence.at(level, found[i]).prefix.empty()
-						or not tokens.found(ctx->precedence.at(level, found[i]).prefix)) {
+					if (cfg->order.at(level, found[i]).prefix.empty()
+						or not tokens.found(cfg->order.at(level, found[i]).prefix)) {
 						found.erase(found.begin()+i);
 					}
 				}
 			} else {
 				for (int i = found.size()-1; i >= 0; i--) {
-					if (not ctx->precedence.at(level, found[i]).prefix.empty()) {
+					if (not cfg->order.at(level, found[i]).prefix.empty()) {
 						found.erase(found.begin()+i);
 					}
 				}
@@ -435,15 +349,15 @@ void expression::parse(tokenizer &tokens, void *data) {
 		if (not found.empty()) {
 			tokens.increment(false);
 			for (int i = 0; i < (int)found.size(); i++) {
-				tokens.expect(ctx->precedence.at(level, found[i]).trigger);
+				tokens.expect(cfg->order.at(level, found[i]).trigger);
 			}
 		}
 
 		tokens.increment(true);
-		expectLiteral(tokens, -1, *ctx);
+		expectLiteral(tokens, ctx);
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
-			readLiteral(tokens, -1, operation::LITERAL, *ctx);
+			readLiteral(tokens, ctx);
 		}
 
 		bool first = true;
@@ -453,14 +367,14 @@ void expression::parse(tokenizer &tokens, void *data) {
 				sub.valid = true;
 				arguments.clear();
 				operators.clear();
-				arguments.push_back(std::make_unique<expression>(sub));
+				arguments.push_back({-1, std::make_shared<expression>(sub)});
 			}
 			first = false;
 
 			string tok = tokens.next();
 			vector<int> match;
 			for (int i = 0; i < (int)found.size(); i++) {
-				if (ctx->precedence.at(level, found[i]).trigger == tok) {
+				if (cfg->order.at(level, found[i]).trigger == tok) {
 					match.push_back(i);
 				}
 			}
@@ -472,70 +386,74 @@ void expression::parse(tokenizer &tokens, void *data) {
 				}
 			}
 
-			operators.push_back(ctx->precedence.at(level, match[0]));
+			operators.push_back(cfg->order.at(level, match[0]));
 
-			if (not ctx->precedence.at(level, match[0]).postfix.empty()) {
+			if (not cfg->order.at(level, match[0]).postfix.empty()) {
 				tokens.increment(true);
 				for (int i = 0; i < (int)found.size(); i++) {
-					if (not ctx->precedence.at(level, found[i]).postfix.empty()) {
-						tokens.expect(ctx->precedence.at(level, found[i]).postfix);
+					if (not cfg->order.at(level, found[i]).postfix.empty()) {
+						tokens.expect(cfg->order.at(level, found[i]).postfix);
 					}
 				}
 			}
 
-			if (not ctx->precedence.at(level, match[0]).infix.empty()) {
+			if (not cfg->order.at(level, match[0]).infix.empty()) {
+				context upCtx = sub(cfg, 0);
+
 				tokens.increment(false);
-				expectLiteral(tokens, 0, *ctx);
+				expectLiteral(tokens, upCtx);
 
 				if (tokens.decrement(__FILE__, __LINE__)) {
-					readLiteral(tokens, 0, ctx->precedence.at(level, match[0]).rightType, *ctx);
+					readLiteral(tokens, upCtx, cfg->order.at(level, match[0]).rightType);
 
 					tokens.increment(false);
-					tokens.expect(ctx->precedence.at(level, match[0]).infix);
+					tokens.expect(cfg->order.at(level, match[0]).infix);
 
 					while (tokens.decrement(__FILE__, __LINE__)) {
 						tokens.next();
 
 						tokens.increment(false);
-						tokens.expect(ctx->precedence.at(level, match[0]).infix);
+						tokens.expect(cfg->order.at(level, match[0]).infix);
 
 						tokens.increment(true);
-						expectLiteral(tokens, 0, *ctx);
+						expectLiteral(tokens, upCtx);
 
 						if (tokens.decrement(__FILE__, __LINE__)) {
-							readLiteral(tokens, 0, ctx->precedence.at(level, match[0]).rightType, *ctx);
+							readLiteral(tokens, upCtx, cfg->order.at(level, match[0]).rightType);
 						}
 					}
 				}
 			} else {
 				tokens.increment(true);
-				expectLiteral(tokens, -1, *ctx);
+				expectLiteral(tokens, ctx);
 
 				if (tokens.decrement(__FILE__, __LINE__)) {
-					readLiteral(tokens, -1, ctx->precedence.at(level, match[0]).rightType, *ctx);
+					readLiteral(tokens, ctx, cfg->order.at(level, match[0]).rightType);
 				}
 			}
 
-			if (not ctx->precedence.at(level, match[0]).postfix.empty() and tokens.decrement(__FILE__, __LINE__)) {
+			if (not cfg->order.at(level, match[0]).postfix.empty() and tokens.decrement(__FILE__, __LINE__)) {
 				tokens.next();
 			}
 
 			tokens.increment(false);
 			for (int i = 0; i < (int)found.size(); i++) {
-				tokens.expect(ctx->precedence.at(level, found[i]).trigger);
+				tokens.expect(cfg->order.at(level, found[i]).trigger);
 			}
 		}
-	} else if (ctx->precedence.isGroup(level)) {
+	} else if (cfg->order.isGroup(level)) {
+		context upCtx = sub(cfg, 0);
+
 		tokens.increment(false);
-		for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-			tokens.expect(ctx->precedence.at(level, i).prefix);
+		for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+			tokens.expect(cfg->order.at(level, i).prefix);
 		}
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
 			string tok = tokens.next();
 			vector<int> match;
-			for (int i = 0; i < (int)ctx->precedence.at(level).size(); i++) {
-				if (ctx->precedence.at(level, i).prefix == tok) {
+			for (int i = 0; i < (int)cfg->order.at(level).size(); i++) {
+				if (cfg->order.at(level, i).prefix == tok) {
 					match.push_back(i);
 				}
 			}
@@ -547,31 +465,31 @@ void expression::parse(tokenizer &tokens, void *data) {
 				}
 			}
 
-			operators.push_back(ctx->precedence.at(level, match[0]));
+			operators.push_back(cfg->order.at(level, match[0]));
 	
 			tokens.increment(true);
-			tokens.expect(ctx->precedence.at(level, match[0]).postfix);
+			tokens.expect(cfg->order.at(level, match[0]).postfix);
 	
 			tokens.increment(false);
-			expectLiteral(tokens, 0, *ctx);
+			expectLiteral(tokens, upCtx);
 
 			if (tokens.decrement(__FILE__, __LINE__)) {
-				readLiteral(tokens, 0, operation::LITERAL, *ctx);
+				readLiteral(tokens, upCtx);
 
 				tokens.increment(false);
-				tokens.expect(ctx->precedence.at(level, match[0]).infix);
+				tokens.expect(cfg->order.at(level, match[0]).infix);
 
 				while (tokens.decrement(__FILE__, __LINE__)) {
 					tokens.next();
 
 					tokens.increment(false);
-					tokens.expect(ctx->precedence.at(level, match[0]).infix);
+					tokens.expect(cfg->order.at(level, match[0]).infix);
 
 					tokens.increment(true);
-					expectLiteral(tokens, 0, *ctx);
+					expectLiteral(tokens, upCtx);
 
 					if (tokens.decrement(__FILE__, __LINE__)) {
-						readLiteral(tokens, 0, operation::LITERAL, *ctx);
+						readLiteral(tokens, upCtx);
 					}
 				}
 			}
@@ -580,11 +498,13 @@ void expression::parse(tokenizer &tokens, void *data) {
 				tokens.next();
 			}
 		}	else {
+			context ctx = sub(cfg);
+
 			tokens.increment(true);
-			expectLiteral(tokens, -1, *ctx);
+			expectLiteral(tokens, ctx);
 
 			if (tokens.decrement(__FILE__, __LINE__)) {
-				readLiteral(tokens, -1, operation::LITERAL, *ctx);
+				readLiteral(tokens, ctx);
 			}
 		}
 	}
@@ -592,13 +512,13 @@ void expression::parse(tokenizer &tokens, void *data) {
 	tokens.syntax_end(this);
 }
 
-bool expression::is_next(tokenizer &tokens, int i, void *data) {
-	if (data == nullptr) {
+bool expression::is_next(tokenizer &tokens, int i, std::any data) {
+	if (not data.has_value()) {
 		tokens.internal("expression has no context", __FILE__, __LINE__);
 		return false;
 	}
 
-	context *ctx = (context*)data;
+	context ctx = std::any_cast<context>(data);
 
 	if (tokens.is_next("func", i)
 		or tokens.is_next("struct", i)
@@ -613,24 +533,26 @@ bool expression::is_next(tokenizer &tokens, int i, void *data) {
 		return false;
 	}
 
-	bool result = (tokens.is_next("(", i)
-		or tokens.is_next(ctx->constant.label, i)
-		or tokens.is_next(ctx->literal.label, i));
-
-	int level = -1;
-	if (data != nullptr) {
-		level = *(int*)data;
+	if (tokens.is_next("(", i)) {
+		return true;
+	}
+	for (auto &literal : ctx.cfg->literals) {
+		if (literal.is_next(tokens, i)) {
+			return true;
+		}
 	}
 
-	for (int j = level+1; j < (int)ctx->precedence.size(); j++) {
-		for (int k = 0; k < (int)ctx->precedence.at(j).size(); k++) {
-			if (not ctx->precedence.at(j, k).prefix.empty()) {
-				result = result or tokens.is_next(ctx->precedence.at(j, k).prefix, i);
+	for (int j = ctx.level; j < (int)ctx.cfg->order.size(); j++) {
+		for (int k = 0; k < (int)ctx.cfg->order.at(j).size(); k++) {
+			if (not ctx.cfg->order.at(j, k).prefix.empty()) {
+				if (tokens.is_next(ctx.cfg->order.at(j, k).prefix, i)) {
+					return true;
+				}
 			}
 		}
 	}
 
-	return result;
+	return false;
 }
 
 void expression::register_syntax(tokenizer &tokens) {
@@ -646,10 +568,10 @@ string expression::to_string(string tab) const {
 }
 
 string expression::argument_to_string(int i, int prev_level, bool prev_group, string tab) const {
-	if (arguments[i]->is_a<expression>()) {
-		return arguments[i]->get<expression>().to_string(prev_level, prev_group, tab);
+	if (arguments[i].ptr->is_a<expression>()) {
+		return arguments[i].ptr->get<expression>().to_string(prev_level, prev_group, tab);
 	} else {
-		return arguments[i]->to_string(tab);
+		return arguments[i].ptr->to_string(tab);
 	}
 }
 

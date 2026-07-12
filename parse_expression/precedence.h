@@ -1,24 +1,19 @@
 #pragma once
 
 #include <parse/parse.h>
-#include <parse/syntax.h>
+#include <parse/factory.h>
 
 namespace parse_expression {
 
 struct operation {
-	enum ArgType {
-		TYPE = 0,
-		TERM = 1,
-		LABEL = 2,
-		LITERAL = 3
-	};
-
 	operation();
-	operation(string prefix, string trigger, string infix, string postfix, ArgType leftType=LITERAL, ArgType rightType=LITERAL);
+	operation(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType=std::vector<int>(), std::vector<int> rightType=std::vector<int>());
 	~operation();
 
-	ArgType leftType;
-	ArgType rightType;
+	// DESIGN(edward.bingham) only used by modifiers
+	// TODO(edward.bingham) should I try to support the other types?
+	std::vector<int> leftType; // not used
+	std::vector<int> rightType;
 
 	string prefix;
 	string trigger;
@@ -55,7 +50,7 @@ struct operation_set {
 	int type;
 	vector<operation> symbols;
 
-	void push(string prefix, string trigger, string infix, string postfix, operation::ArgType leftType=operation::LITERAL, operation::ArgType rightType=operation::LITERAL);
+	void push(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType=std::vector<int>(), std::vector<int> rightType=std::vector<int>());
 	void push(operation op);
 	int find(operation op) const;
 };
@@ -87,7 +82,7 @@ struct precedence_set {
 	const operation &at(index i) const;
 
 	void push(int type);
-	void push_back(string prefix, string trigger, string infix, string postfix, operation::ArgType leftType=operation::LITERAL, operation::ArgType rightType=operation::LITERAL);
+	void push_back(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType=std::vector<int>(), std::vector<int> rightType=std::vector<int>());
 
 	bool isValidLevel(int level) const;
 
@@ -96,6 +91,34 @@ struct precedence_set {
 };
 
 ostream &operator<<(ostream &os, const precedence_set &s);
+
+struct config {
+	vector<parse::factory> literals;
+	vector<int> base;
+	precedence_set order;
+	int lvalueLevel;
+
+	config(std::initializer_list<parse::factory> literals={});
+	~config();
+
+	template <typename T>
+	int push(std::any data=std::any()) {
+		int result = (int)literals.size();
+		literals.push_back(parse::factory(parse::schema::from<T>(), data));
+		return result;
+	}
+
+	void register_syntax(tokenizer &tokens);
+};
+
+struct context {
+	std::shared_ptr<config> cfg;
+	int level;
+
+	context();
+	context(std::shared_ptr<config> cfg, int level=0);
+	~context();
+};
 
 }
 

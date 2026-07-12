@@ -2,31 +2,33 @@
 #include <parse/default/line_comment.h>
 #include <parse/default/block_comment.h>
 #include <parse_expression/assignment.h>
-#include <parse_expression/composition.h>
+#include <parse_expression/literal.h>
 #include <sstream>
 #include <string>
-#include "helpers.h"
 
 using namespace std;
 
-using expression=parse_expression::expression_t<>;
-using assignment=parse_expression::assignment_t<>;
-using composition=parse_expression::composition_t<>;
+using config = parse_expression::config;
+using context = parse_expression::context;
+using expression = parse_expression::expression;
+using assignment = parse_expression::assignment;
+
+context exprCtx(parse_expression::defaultExprConfig());
+context compCtx(parse_expression::defaultCompConfig(exprCtx.cfg));
 
 TEST(AssignmentParser, BasicAssignment) {
 	// Test basic assignment with + operation
 	string test_code = "a+";
 
-	expression::register_precedence(createPrecedence());
-	assignment::lvalueLevel = 15;
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	exprCtx.cfg->register_syntax(tokens);
+	compCtx.cfg->register_syntax(tokens);
 	assignment::register_syntax(tokens);
 	tokens.insert("assignment_test", test_code);
-	
-	assignment assign(tokens);
+
+	assignment assign(tokens, exprCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(assign.valid);
 	EXPECT_EQ(assign.lvalue.size(), 1u);
@@ -37,16 +39,15 @@ TEST(AssignmentParser, BasicAssignment) {
 TEST(AssignmentParser, RemovalOperation) {
 	string test_code = "a-";
 	
-	expression::register_precedence(createPrecedence());
-	assignment::lvalueLevel = 15;
-
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	exprCtx.cfg->register_syntax(tokens);
+	compCtx.cfg->register_syntax(tokens);
 	assignment::register_syntax(tokens);
 	tokens.insert("removal_test", test_code);
 	
-	assignment assign(tokens);
+	assignment assign(tokens, exprCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(assign.valid);
 	EXPECT_EQ(assign.to_string(), "a-");
@@ -55,16 +56,15 @@ TEST(AssignmentParser, RemovalOperation) {
 TEST(AssignmentParser, ComplexVariableName) {
 	string test_code = "module.signal[3]+";
 
-	expression::register_precedence(createPrecedence());
-	assignment::lvalueLevel = 15;
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	exprCtx.cfg->register_syntax(tokens);
+	compCtx.cfg->register_syntax(tokens);
 	assignment::register_syntax(tokens);
 	tokens.insert("complex_var_test", test_code);
 	
-	assignment assign(tokens);
+	assignment assign(tokens, exprCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(assign.valid);
 	EXPECT_EQ(assign.to_string(), "module.signal[3]+");
@@ -74,16 +74,15 @@ TEST(AssignmentParser, AssignmentWithExpression) {
 	// Test assignment with expression
 	string test_code = "d = a & b | c";
 
-	expression::register_precedence(createPrecedence());
-	assignment::lvalueLevel = 15;
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	exprCtx.cfg->register_syntax(tokens);
+	compCtx.cfg->register_syntax(tokens);
 	assignment::register_syntax(tokens);
 	tokens.insert("assignment_expr_test", test_code);
 	
-	assignment assign(tokens);
+	assignment assign(tokens, exprCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(assign.valid);
 	EXPECT_EQ(assign.to_string(), "d=a&b|c");
@@ -93,16 +92,15 @@ TEST(AssignmentParser, FunctionCall) {
 	// Test multiple assignments with expressions
 	string test_code = "v1=f0(a & b, c | d)";
 	
-	expression::register_precedence(createPrecedence());
-	assignment::lvalueLevel = 15;
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	exprCtx.cfg->register_syntax(tokens);
+	compCtx.cfg->register_syntax(tokens);
 	assignment::register_syntax(tokens);
 	tokens.insert("function_call", test_code);
 	
-	assignment assign(tokens);
+	assignment assign(tokens, exprCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(assign.valid);
 	EXPECT_EQ(assign.to_string(), "v1=f0(a&b,c|d)");
@@ -116,16 +114,15 @@ TEST(CompositionParser, ParallelComposition) {
 	// Test parallel composition (,)
 	string test_code = "a+, b+, c-";
 	
-	expression::register_precedence(createPrecedence());
-	assignment::lvalueLevel = 15;
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	composition::register_syntax(tokens);
+	exprCtx.cfg->register_syntax(tokens);
+	compCtx.cfg->register_syntax(tokens);
+	expression::register_syntax(tokens);
 	tokens.insert("parallel_test", test_code);
 	
-	composition comp(tokens);
+	expression comp(tokens, compCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(comp.valid);
 	EXPECT_EQ(comp.to_string(), "a+,b+,c-");
@@ -135,16 +132,15 @@ TEST(CompositionParser, InternalChoice) {
 	// Test internal choice (:)
 	string test_code = "(a+) : (b-)";
 	
-	expression::register_precedence(createPrecedence());
-	assignment::lvalueLevel = 15;
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	composition::register_syntax(tokens);
+	exprCtx.cfg->register_syntax(tokens);
+	compCtx.cfg->register_syntax(tokens);
+	expression::register_syntax(tokens);
 	tokens.insert("choice_test", test_code);
 	
-	composition comp(tokens);
+	expression comp(tokens, compCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(comp.valid);
 	EXPECT_EQ(comp.to_string(), "(a+):(b-)");
@@ -154,35 +150,33 @@ TEST(CompositionParser, NestedComposition) {
 	// Test nested compositions
 	string test_code = "(a+, b+) : (c-, (d+ : e+))";
 	
-	expression::register_precedence(createPrecedence());
-	assignment::lvalueLevel = 15;
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	composition::register_syntax(tokens);
+	exprCtx.cfg->register_syntax(tokens);
+	compCtx.cfg->register_syntax(tokens);
+	expression::register_syntax(tokens);
 	tokens.insert("nested_test", test_code);
 	
-	composition comp(tokens);
+	expression comp(tokens, compCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(comp.valid);
-	EXPECT_EQ(comp.to_string(), "(a+,b+):(c-,(d+):(e+))");
+	EXPECT_EQ(comp.to_string(), "(a+,b+):(c-,(d+:e+))");
 }
 
 TEST(CompositionParser, ComplexComposition) {
 	// Test a complex composition structure
 	string test_code = "(a = x & y, b-) : (e = c & d @ f : g)";
 	
-	expression::register_precedence(createPrecedence());
-	assignment::lvalueLevel = 15;
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
-	composition::register_syntax(tokens);
+	exprCtx.cfg->register_syntax(tokens);
+	compCtx.cfg->register_syntax(tokens);
+	expression::register_syntax(tokens);
 	tokens.insert("complex_composition", test_code);
 	
-	composition comp(tokens);
+	expression comp(tokens, compCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(comp.valid);
 	EXPECT_EQ(comp.to_string(), "(a=x&y,b-):(e=c&d@f:g)");

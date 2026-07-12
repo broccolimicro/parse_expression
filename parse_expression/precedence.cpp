@@ -1,23 +1,15 @@
-/*
- * expression.cpp
- *
- *  Created on: Jan 18, 2015
- *      Author: nbingham
- */
-
 #include "expression.h"
 #include <parse/default/symbol.h>
 #include <parse/default/number.h>
 #include <parse/default/instance.h>
 #include <parse/default/white_space.h>
 
-namespace parse_expression
-{
+namespace parse_expression {
 
 operation::operation() {
 }
 
-operation::operation(string prefix, string trigger, string infix, string postfix, ArgType leftType, ArgType rightType) {
+operation::operation(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType, std::vector<int> rightType) {
 	this->prefix = prefix;
 	this->trigger = trigger;
 	this->infix = infix;
@@ -75,7 +67,7 @@ operation_set::operation_set(int type) {
 operation_set::~operation_set() {
 }
 
-void operation_set::push(string prefix, string trigger, string infix, string postfix, operation::ArgType leftType, operation::ArgType rightType) {
+void operation_set::push(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType, std::vector<int> rightType) {
 	push(operation(prefix, trigger, infix, postfix, leftType, rightType));
 }
 
@@ -164,7 +156,7 @@ void precedence_set::push(int type) {
 	operations.push_back(operation_set(type));
 }
 
-void precedence_set::push_back(string prefix, string trigger, string infix, string postfix, operation::ArgType leftType, operation::ArgType rightType) {
+void precedence_set::push_back(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType, std::vector<int> rightType) {
 	operations.back().push(prefix, trigger, infix, postfix, leftType, rightType);
 }
 
@@ -187,6 +179,32 @@ ostream &operator<<(ostream &os, const precedence_set &s) {
 	}
 	os << "}";
 	return os;
+}
+
+config::config(std::initializer_list<parse::factory> literals) : literals(literals) {
+	lvalueLevel = 0;
+}
+
+config::~config() {
+}
+
+void config::register_syntax(tokenizer &tokens) {
+	for (parse::factory &literal : literals) {
+		literal.register_syntax(tokens);
+	}
+}
+
+context::context() {
+	level = 0;
+	cfg = nullptr;
+}
+
+context::context(std::shared_ptr<config> cfg, int level) {
+	this->level = level;
+	this->cfg = cfg;
+}
+
+context::~context() {
 }
 
 }

@@ -13,51 +13,13 @@
 
 namespace parse_expression {
 
-struct default_literal : parse::syntax {
-	std::string name;
-
-	default_literal();
-	default_literal(tokenizer &tokens, void *data);
-	~default_literal();
-
-	void parse(tokenizer &tokens, void *data);
-	static bool is_next(tokenizer &tokens, int i=1, void *data=nullptr);
-	static void register_syntax(tokenizer &tokens);
-
-	string to_string(string tab="") const;
-
-	parse::syntax *clone() const;
-};
-
-struct default_constant : parse::syntax {
-	std::string value;
-
-	default_constant();
-	default_constant(tokenizer &tokens, void *data);
-	~default_constant();
-
-	void parse(tokenizer &tokens, void *data);
-	static bool is_next(tokenizer &tokens, int i=1, void *data=nullptr);
-	static void register_syntax(tokenizer &tokens);
-
-	string to_string(string tab="") const;
-
-	parse::syntax *clone() const;
-};
-
-struct context {
-	parse::schema constant;
-	parse::schema literal;
-	precedence_set precedence;
-	void *data;
-
-	context();
-	context(precedence_set precedence, parse::schema constant=parse::schema::from<default_constant>(), parse::schema literal=parse::schema::from<default_literal>(), void *data=nullptr);
-	~context();
-};
-
 struct expression : parse::syntax {
-	vector<std::unique_ptr<parse::syntax> > arguments;
+	struct argument {
+		int type;
+		std::shared_ptr<parse::syntax> ptr;
+	};
+
+	vector<argument> arguments;
 	vector<operation> operators;
 
 	int level;
@@ -65,8 +27,10 @@ struct expression : parse::syntax {
 
 	expression();
 	expression(const expression &copy);
-	expression(context &ctx, tokenizer &tokens, int level=0);
+	expression(tokenizer &tokens, context ctx);
 	~expression();
+
+	context sub(std::shared_ptr<config> cfg, int nextLevel=-1);
 
 	bool isTernary() const;
 	bool isBinary() const;
@@ -74,11 +38,11 @@ struct expression : parse::syntax {
 	bool isModifier() const;
 	bool isGroup() const;
 
-	void expectLiteral(tokenizer &tokens, int next, context &ctx);
-	void readLiteral(tokenizer &tokens, int next, operation::ArgType argType, context &ctx);
+	void expectLiteral(tokenizer &tokens, context ctx, std::vector<int> argType=std::vector<int>());
+	void readLiteral(tokenizer &tokens, context ctx, std::vector<int> argType=std::vector<int>());
 
-	void parse(tokenizer &tokens, void *data);
-	static bool is_next(tokenizer &tokens, int i=1, void *data=nullptr);
+	void parse(tokenizer &tokens, std::any data);
+	static bool is_next(tokenizer &tokens, int i=1, std::any data=std::any());
 	static void register_syntax(tokenizer &tokens);
 
 	string to_string(string tab="") const;

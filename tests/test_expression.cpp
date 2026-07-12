@@ -2,28 +2,30 @@
 #include <parse/default/line_comment.h>
 #include <parse/default/block_comment.h>
 #include <parse_expression/expression.h>
+#include <parse_expression/literal.h>
 #include <sstream>
 #include <string>
 
-#include "helpers.h"
-
 using namespace std;
 
-using expression=parse_expression::expression_t<>;
+using config = parse_expression::config;
+using context = parse_expression::context;
+using expression = parse_expression::expression;
+
+context ctx(parse_expression::defaultExprConfig());
 
 TEST(ExpressionParser, BasicBooleanOperations) {
 	// Test simple AND, OR, NOT operations
 	string test_code = "a & b | ~c";
 
-	expression::register_precedence(createPrecedence());
-
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("basic_boolean", test_code);
-	
-	expression expr(tokens);
+
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "a&b|~c");
@@ -33,15 +35,14 @@ TEST(ExpressionParser, OperatorPrecedence) {
 	// Test that operator precedence is correctly handled
 	string test_code = "a & b | c & d";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("precedence_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "a&b|c&d");
@@ -51,15 +52,14 @@ TEST(ExpressionParser, ParenthesesGrouping) {
 	// Test parentheses for grouping
 	string test_code = "(a | b) & c";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("parentheses_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "(a|b)&c");
@@ -69,15 +69,14 @@ TEST(ExpressionParser, ComplexVariableNames) {
 	// Test complex variable names with dots and slices
 	string test_code = "module.sub.signal[3] & another.signal[1:5][c::x:a+b]";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("variable_name_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "module.sub.signal[3]&another.signal[1:5][c::x:a+b]");
@@ -87,15 +86,14 @@ TEST(ExpressionParser, NestedExpressions) {
 	// Test nested expressions with multiple levels
 	string test_code = "a & (b | (c & d)) | ~e";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("nested_expr", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "a&(b|(c&d))|~e");
@@ -105,15 +103,14 @@ TEST(ExpressionParser, ComplexBooleanExpressions) {
 	// Test complex boolean expressions with multiple operators
 	string test_code = "a & ~b | (c & d & ~e) | (f | ~g)";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("complex_boolean_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "a&~b|(c&d&~e)|(f|~g)");
@@ -123,15 +120,14 @@ TEST(ExpressionParser, ArithmeticAndComparison) {
 	// Test arithmetic and comparison operators
 	string test_code = "(a + b) * c < (d - e) & x == y";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("arithmetic_comparison_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "(a+b)*c<(d-e)&x==y");
@@ -141,15 +137,14 @@ TEST(ExpressionParser, UnaryOperators) {
 	// Test unary operators
 	string test_code = "~a & +b & -c";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("unary_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "~a&+b&-c");
@@ -159,15 +154,14 @@ TEST(ExpressionParser, Numbers) {
 	// Test numbers in expressions
 	string test_code = "a & 42 | b & 0";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("numbers_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "a&42|b&0");
@@ -177,15 +171,14 @@ TEST(ExpressionParser, Constants) {
 	// Test constants like vdd and gnd
 	string test_code = "signal & vdd | variable & gnd";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("constants_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "signal&vdd|variable&gnd");
@@ -199,16 +192,15 @@ TEST(ExpressionParser, ErrorHandling) {
 		"a & (b | c"	 // Missing closing parenthesis
 	};
 	
-	expression::register_precedence(createPrecedence());
-	
 	for (const auto& error_case : error_cases) {
 		tokenizer tokens;
 		tokens.register_token<parse::block_comment>(false);
 		tokens.register_token<parse::line_comment>(false);
+		ctx.cfg->register_syntax(tokens);
 		expression::register_syntax(tokens);
 		tokens.insert("error_test", error_case);
 		
-		expression expr(tokens);
+		expression expr(tokens, ctx);
 		EXPECT_FALSE(tokens.is_clean());
 	}
 }
@@ -217,15 +209,14 @@ TEST(ExpressionParser, Function) {
 	// Test numbers in expressions
 	string test_code = "a+y.x[3].myfunc(x, y)[3].z";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("function_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "a+y.x[3].myfunc(x,y)[3].z");
@@ -235,15 +226,14 @@ TEST(ExpressionParser, RightUnary) {
 	// Test numbers in expressions
 	string test_code = "A[Y?]!X?";
 	
-	expression::register_precedence(createPrecedence());
-	
 	tokenizer tokens;
 	tokens.register_token<parse::block_comment>(false);
 	tokens.register_token<parse::line_comment>(false);
+	ctx.cfg->register_syntax(tokens);
 	expression::register_syntax(tokens);
 	tokens.insert("right_unary_test", test_code);
 	
-	expression expr(tokens);
+	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
 	EXPECT_EQ(expr.to_string(), "A[Y?]!X?");
