@@ -375,7 +375,7 @@ void expression::parse(tokenizer &tokens, std::any data) {
 			vector<int> match;
 			for (int i = 0; i < (int)found.size(); i++) {
 				if (cfg->order.at(level, found[i]).trigger == tok) {
-					match.push_back(i);
+					match.push_back(found[i]);
 				}
 			}
 
@@ -390,11 +390,7 @@ void expression::parse(tokenizer &tokens, std::any data) {
 
 			if (not cfg->order.at(level, match[0]).postfix.empty()) {
 				tokens.increment(true);
-				for (int i = 0; i < (int)found.size(); i++) {
-					if (not cfg->order.at(level, found[i]).postfix.empty()) {
-						tokens.expect(cfg->order.at(level, found[i]).postfix);
-					}
-				}
+				tokens.expect(cfg->order.at(level, match[0]).postfix);
 			}
 
 			if (not cfg->order.at(level, match[0]).infix.empty()) {
@@ -424,11 +420,18 @@ void expression::parse(tokenizer &tokens, std::any data) {
 					}
 				}
 			} else {
+				context upCtx;
+				if (cfg->order.at(level, match[0]).postfix.empty()) {
+					upCtx = sub(cfg);
+				} else {
+					upCtx = sub(cfg, 0);
+				}
+
 				tokens.increment(true);
-				expectLiteral(tokens, ctx);
+				expectLiteral(tokens, upCtx);
 
 				if (tokens.decrement(__FILE__, __LINE__)) {
-					readLiteral(tokens, ctx, cfg->order.at(level, match[0]).rightType);
+					readLiteral(tokens, upCtx, cfg->order.at(level, match[0]).rightType);
 				}
 			}
 
@@ -606,6 +609,9 @@ string expression::to_string(int prev_level, bool prev_group, string tab) const 
 	} else if (isUnary()) {
 		for (int i = 0; i < (int)operators.size(); i++) {
 			result += operators[i].prefix;
+			if (not operators[i].prefix.empty() and isalnum(operators[i].prefix.back())) {
+				result += " ";
+			}
 		}
 
 		result += argument_to_string(0, level, false, tab);

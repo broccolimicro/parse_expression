@@ -52,5 +52,41 @@ struct expression : parse::syntax {
 	parse::syntax *clone() const;
 };
 
+template <typename tag>
+struct wrapper : expression {
+	using super = expression;
+
+	static std::shared_ptr<config> cfg;
+
+	static void expect(tokenizer &tokens) {
+		tokens.expect<expression>(context(cfg));
+	}
+
+	static void expectl(tokenizer &tokens) {
+		tokens.expect<expression>(context(cfg, cfg->lvalueLevel));
+	}
+
+	void parse(tokenizer &tokens, std::any data={}) {
+		super::parse(tokens, context(cfg));
+	}
+
+	void parsel(tokenizer &tokens, std::any data={}) {
+		super::parse(tokens, context(cfg, cfg->lvalueLevel));
+	}
+
+	static bool is_next(tokenizer &tokens, int i, std::any data={}) {
+		return super::is_next(tokens, i, context(cfg));
+	}
+
+	static bool is_nextl(tokenizer &tokens, int i, std::any data={}) {
+		return super::is_next(tokens, i, context(cfg, cfg->lvalueLevel));
+	}
+
+	static void register_syntax(tokenizer &tokens) {
+		cfg->register_syntax(tokens);
+		super::register_syntax(tokens);
+	}
+};
+
 }
 
