@@ -52,39 +52,73 @@ struct expression : parse::syntax {
 	parse::syntax *clone() const;
 };
 
-template <typename tag>
-struct wrapper : expression {
+template <typename T>
+struct rvalue : expression {
 	using super = expression;
 
-	static std::shared_ptr<config> cfg;
-
-	static void expect(tokenizer &tokens) {
-		tokens.expect<expression>(context(cfg));
+	rvalue() {
+		debug_name = T().debug_name+"_rvalue";
 	}
 
-	static void expectl(tokenizer &tokens) {
-		tokens.expect<expression>(context(cfg, cfg->lvalueLevel));
+	rvalue(tokenizer &tokens, std::any data={}) {
+		debug_name = T().debug_name+"_rvalue";
+		parse(tokens, data);
+	}
+
+	~rvalue() {
 	}
 
 	void parse(tokenizer &tokens, std::any data={}) {
-		super::parse(tokens, context(cfg));
-	}
-
-	void parsel(tokenizer &tokens, std::any data={}) {
-		super::parse(tokens, context(cfg, cfg->lvalueLevel));
+		super::parse(tokens, context(T::cfg));
 	}
 
 	static bool is_next(tokenizer &tokens, int i, std::any data={}) {
-		return super::is_next(tokens, i, context(cfg));
-	}
-
-	static bool is_nextl(tokenizer &tokens, int i, std::any data={}) {
-		return super::is_next(tokens, i, context(cfg, cfg->lvalueLevel));
+		return super::is_next(tokens, i, context(T::cfg));
 	}
 
 	static void register_syntax(tokenizer &tokens) {
-		cfg->register_syntax(tokens);
-		super::register_syntax(tokens);
+		T::cfg->register_syntax(tokens);
+		if (!tokens.syntax_registered<rvalue<T> >()) {
+			tokens.register_syntax<rvalue<T> >();
+			tokens.register_token<parse::symbol>();
+			tokens.register_token<parse::white_space>(false);
+			super::register_syntax(tokens);
+		}
+	}
+};
+
+template <typename T>
+struct lvalue : expression {
+	using super = expression;
+
+	lvalue() {
+		debug_name = T().debug_name+"_lvalue";
+	}
+
+	lvalue(tokenizer &tokens, std::any data={}) {
+		debug_name = T().debug_name+"_lvalue";
+		parse(tokens, data);
+	}
+
+	~lvalue() {
+	}
+
+	void parse(tokenizer &tokens, std::any data={}) {
+		super::parse(tokens, context(T::cfg, T::cfg->lvalueLevel));
+	}
+
+	static bool is_next(tokenizer &tokens, int i, std::any data={}) {
+		return super::is_next(tokens, i, context(T::cfg, T::cfg->lvalueLevel));
+	}
+
+	static void register_syntax(tokenizer &tokens) {
+		T::cfg->register_syntax(tokens);
+		if (!tokens.syntax_registered<lvalue<T> >()) {
+			tokens.register_syntax<lvalue<T> >();
+			tokens.register_token<parse::symbol>();
+			tokens.register_token<parse::white_space>(false);
+			super::register_syntax(tokens);
+		}
 	}
 };
 
