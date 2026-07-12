@@ -13,8 +13,8 @@ using context = parse_expression::context;
 using expression = parse_expression::expression;
 using assignment = parse_expression::assignment;
 
-context exprCtx(parse_expression::defaultExprConfig());
-context compCtx(parse_expression::defaultCompConfig(exprCtx.cfg));
+context exprCtx(std::make_shared<config>(parse_expression::defaultExprConfig()));
+context compCtx(std::make_shared<config>(parse_expression::defaultCompConfig(exprCtx)));
 
 TEST(AssignmentParser, BasicAssignment) {
 	// Test basic assignment with + operation

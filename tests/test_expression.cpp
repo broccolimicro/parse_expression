@@ -12,7 +12,7 @@ using config = parse_expression::config;
 using context = parse_expression::context;
 using expression = parse_expression::expression;
 
-context ctx(parse_expression::defaultExprConfig());
+context ctx(std::make_shared<config>(parse_expression::defaultExprConfig()));
 
 TEST(ExpressionParser, BasicBooleanOperations) {
 	// Test simple AND, OR, NOT operations

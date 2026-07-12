@@ -101,82 +101,82 @@ parse::syntax *default_constant::clone() const {
 	return new default_constant(*this);
 }
 
-std::shared_ptr<config> defaultExprConfig() {
-	std::shared_ptr<config> cfg = std::make_shared<config>();
-	int CONSTANT = cfg->push<default_constant>();
-	int LITERAL = cfg->push<default_literal>();
-	int LABEL = cfg->push<default_literal>();
+config defaultExprConfig() {
+	config cfg;
+	int CONSTANT = cfg.push<default_constant>();
+	int LITERAL = cfg.push<default_literal>();
+	int LABEL = cfg.push<default_literal>();
 
-	cfg->base = {CONSTANT, LITERAL};
+	cfg.base = {CONSTANT, LITERAL};
 
-	cfg->order.push(operation_set::GROUP);
-	cfg->order.push_back("[", "", ",", "]");
+	cfg.order.push(operation_set::GROUP);
+	cfg.order.push_back("[", "", ",", "]");
 
-	cfg->order.push(operation_set::TERNARY);
-	cfg->order.push_back("", "@", ":", "");
+	cfg.order.push(operation_set::TERNARY);
+	cfg.order.push_back("", "@", ":", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "|", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "|", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "&", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "&", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "^", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "^", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "==", "");
-	cfg->order.push_back("", "", "~=", "");
-	cfg->order.push_back("", "", "<", "");
-	cfg->order.push_back("", "", ">", "");
-	cfg->order.push_back("", "", "<=", "");
-	cfg->order.push_back("", "", ">=", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "==", "");
+	cfg.order.push_back("", "", "~=", "");
+	cfg.order.push_back("", "", "<", "");
+	cfg.order.push_back("", "", ">", "");
+	cfg.order.push_back("", "", "<=", "");
+	cfg.order.push_back("", "", ">=", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "||", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "||", "");
 	
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "&&", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "&&", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "^^", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "^^", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "<<", "");
-	cfg->order.push_back("", "", ">>", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "<<", "");
+	cfg.order.push_back("", "", ">>", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "+", "");
-	cfg->order.push_back("", "", "-", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "+", "");
+	cfg.order.push_back("", "", "-", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", "*", "");
-	cfg->order.push_back("", "", "/", "");
-	cfg->order.push_back("", "", "%", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", "*", "");
+	cfg.order.push_back("", "", "/", "");
+	cfg.order.push_back("", "", "%", "");
 
-	cfg->order.push(operation_set::UNARY);
-	cfg->order.push_back("!", "", "", "");
-	cfg->order.push_back("~", "", "", "");
-	cfg->order.push_back("+", "", "", "");
-	cfg->order.push_back("-", "", "", "");
+	cfg.order.push(operation_set::UNARY);
+	cfg.order.push_back("!", "", "", "");
+	cfg.order.push_back("~", "", "", "");
+	cfg.order.push_back("+", "", "", "");
+	cfg.order.push_back("-", "", "", "");
 
-	cfg->order.push(operation_set::MODIFIER);
-	cfg->order.push_back("", "!", "", "");
+	cfg.order.push(operation_set::MODIFIER);
+	cfg.order.push_back("", "!", "", "");
 
-	cfg->order.push(operation_set::UNARY);
-	cfg->order.push_back("#", "", "", "");
-	cfg->order.push_back("", "", "", "?");
+	cfg.order.push(operation_set::UNARY);
+	cfg.order.push_back("#", "", "", "");
+	cfg.order.push_back("", "", "", "?");
 
-	cfg->order.push(operation_set::MODIFIER);
-	cfg->order.push_back("", "'", "", "", cfg->base, {LABEL});
+	cfg.order.push(operation_set::MODIFIER);
+	cfg.order.push_back("", "'", "", "", cfg.base, {LABEL});
 
-	cfg->order.push(operation_set::MODIFIER);
-	cfg->order.push_back("", "(", ",", ")");
-	cfg->order.push_back("", ".", "", "", cfg->base, {LABEL});
-	cfg->order.push_back("", "[", ":", "]");
-	cfg->order.push_back("", "::", "", "", cfg->base, {LABEL});
+	cfg.order.push(operation_set::MODIFIER);
+	cfg.order.push_back("", "(", ",", ")");
+	cfg.order.push_back("", ".", "", "", cfg.base, {LABEL});
+	cfg.order.push_back("", "[", ":", "]");
+	cfg.order.push_back("", "::", "", "", cfg.base, {LABEL});
 	
-	cfg->lvalueLevel = 15;
+	cfg.lvalueLevel = 15;
 
 	return cfg;
 }

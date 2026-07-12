@@ -185,21 +185,21 @@ parse::syntax *assignment::clone() const {
 	return new assignment(*this);
 }
 
-std::shared_ptr<config> defaultCompConfig(context ctx) {
-	std::shared_ptr<config> cfg = std::make_shared<config>();
+config defaultCompConfig(context ctx) {
+	config cfg;
 
-	int GUARD = cfg->push<guard>(ctx);
-	int ASSIGN = cfg->push<assignment>(ctx);
+	int GUARD = cfg.push<guard>(ctx);
+	int ASSIGN = cfg.push<assignment>(ctx);
 
-	cfg->base = {GUARD, ASSIGN};
+	cfg.base = {GUARD, ASSIGN};
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", ":", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", ":", "");
 
-	cfg->order.push(operation_set::BINARY);
-	cfg->order.push_back("", "", ",", "");
+	cfg.order.push(operation_set::BINARY);
+	cfg.order.push_back("", "", ",", "");
 
-	cfg->lvalueLevel = 2;
+	cfg.lvalueLevel = 2;
 
 	return cfg;
 }

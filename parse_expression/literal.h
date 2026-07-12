@@ -40,6 +40,6 @@ struct default_constant : parse::syntax {
 	parse::syntax *clone() const;
 };
 
-std::shared_ptr<config> defaultExprConfig();
+config defaultExprConfig();
 
 }

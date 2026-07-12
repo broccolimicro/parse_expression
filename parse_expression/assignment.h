@@ -40,6 +40,6 @@ struct assignment : parse::syntax {
 	parse::syntax *clone() const;
 };
 
-std::shared_ptr<config> defaultCompConfig(context ctx);
+config defaultCompConfig(context ctx);
 
 }
