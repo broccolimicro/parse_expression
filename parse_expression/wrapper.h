@@ -32,8 +32,8 @@ struct rvalue : Base {
 
 	static void register_syntax(tokenizer &tokens) {
 		Tag::cfg->register_syntax(tokens);
-		if (not tokens.syntax_registered<rvalue<Tag> >()) {
-			tokens.register_syntax<rvalue<Tag> >();
+		if (not tokens.syntax_registered<rvalue<Tag, Base> >()) {
+			tokens.register_syntax<rvalue<Tag, Base> >();
 			super::register_syntax(tokens);
 		}
 	}
@@ -65,10 +65,8 @@ struct lvalue : Base {
 
 	static void register_syntax(tokenizer &tokens) {
 		Tag::cfg->register_syntax(tokens);
-		if (!tokens.syntax_registered<lvalue<Tag> >()) {
-			tokens.register_syntax<lvalue<Tag> >();
-			tokens.register_token<parse::symbol>();
-			tokens.register_token<parse::white_space>(false);
+		if (!tokens.syntax_registered<lvalue<Tag, Base> >()) {
+			tokens.register_syntax<lvalue<Tag, Base> >();
 			super::register_syntax(tokens);
 		}
 	}
