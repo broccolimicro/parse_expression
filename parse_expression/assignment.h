@@ -23,8 +23,8 @@ struct guard : parse::syntax {
 };
 
 struct assignment : parse::syntax {
-	vector<expression> lvalue;
-	expression rvalue;
+	vector<expression> left;
+	expression right;
 	string operation;
 
 	assignment();

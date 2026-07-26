@@ -96,7 +96,7 @@ TEST(ExpressionParser, NestedExpressions) {
 	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
-	EXPECT_EQ(expr.to_string(), "a&(b|(c&d))|~e");
+	EXPECT_EQ(expr.to_string(), "a&(b|c&d)|~e");
 }
 
 TEST(ExpressionParser, ComplexBooleanExpressions) {
@@ -113,7 +113,7 @@ TEST(ExpressionParser, ComplexBooleanExpressions) {
 	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
-	EXPECT_EQ(expr.to_string(), "a&~b|(c&d&~e)|(f|~g)");
+	EXPECT_EQ(expr.to_string(), "a&~b|c&d&~e|f|~g");
 }
 
 TEST(ExpressionParser, ArithmeticAndComparison) {
@@ -130,7 +130,7 @@ TEST(ExpressionParser, ArithmeticAndComparison) {
 	expression expr(tokens, ctx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(expr.valid);
-	EXPECT_EQ(expr.to_string(), "(a+b)*c<(d-e)&x==y");
+	EXPECT_EQ(expr.to_string(), "(a+b)*c<d-e&x==y");
 }
 
 TEST(ExpressionParser, UnaryOperators) {

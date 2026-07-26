@@ -64,7 +64,7 @@ void expression::expectLiteral(tokenizer &tokens, context ctx, std::vector<int> 
 		}
 
 		for (int arg : argType) {
-			ctx.cfg->literals[arg].expect(tokens);
+			ctx.cfg->literals[arg].second.expect(tokens);
 		}
 		tokens.expect("(");
 	}
@@ -97,8 +97,8 @@ void expression::readLiteral(tokenizer &tokens, context ctx, std::vector<int> ar
 		}
 
 		for (int arg : argType) {
-			if (ctx.cfg->literals[arg].found(tokens)) {
-				arguments.push_back({arg, std::shared_ptr<parse::syntax>(ctx.cfg->literals[arg].produce(tokens))});
+			if (ctx.cfg->literals[arg].second.found(tokens)) {
+				arguments.push_back({arg, std::shared_ptr<parse::syntax>(ctx.cfg->literals[arg].second.produce(tokens))});
 				break;
 			}
 		}
@@ -540,7 +540,7 @@ bool expression::is_next(tokenizer &tokens, int i, std::any data) {
 		return true;
 	}
 	for (auto &literal : ctx.cfg->literals) {
-		if (literal.is_next(tokens, i)) {
+		if (literal.second.is_next(tokens, i)) {
 			return true;
 		}
 	}
@@ -571,7 +571,9 @@ string expression::to_string(string tab) const {
 }
 
 string expression::argument_to_string(int i, int prev_level, bool prev_group, string tab) const {
-	if (arguments[i].ptr->is_a<expression>()) {
+	if (not arguments[i].ptr) {
+		return "undef";
+	} else if (arguments[i].ptr->is_a<expression>()) {
 		return arguments[i].ptr->get<expression>().to_string(prev_level, prev_group, tab);
 	} else {
 		return arguments[i].ptr->to_string(tab);
@@ -579,29 +581,32 @@ string expression::argument_to_string(int i, int prev_level, bool prev_group, st
 }
 
 string expression::to_string(int prev_level, bool prev_group, string tab) const {
-	if (not valid or arguments.empty())
+	if (not valid or arguments.empty() or level < 0) {
 		return "undef";
+	} else if (operators.empty()) {
+		return argument_to_string(0, prev_level, prev_group, tab);
+	}
 
 	string result = "";
-	bool paren = prev_level > level and not prev_group;
+	bool paren = level >= 0 and prev_level > level and not prev_group;
 	if (paren) {
 		result += "(";
 	}
 
-	if (level < 0) {
-		result += "undef";
-	} else if (operators.empty()) {
-		result += argument_to_string(0, level, false, tab);
-	} else if (isTernary()) {
+	if (isTernary()) {
 		result += argument_to_string(0, level, false, tab);
 		result += operators[0].trigger;
 		result += argument_to_string(1, level, false, tab);
 		result += operators[0].infix;
 		result += argument_to_string(2, level, false, tab);
 	} else if (isBinary()) {
-		for (int i = 0; i < (int)arguments.size() and i-1 < (int)operators.size(); i++) {
+		for (int i = 0; i < (int)arguments.size(); i++) {
 			if (i != 0) {
-				result += operators[i-1].infix;
+				if (i-1 < (int)operators.size()) {
+					result += operators[i-1].infix;
+				} else if (not operators.empty()) {
+					result += operators.back().infix;
+				}
 			}
 
 			result += argument_to_string(i, level, false, tab);

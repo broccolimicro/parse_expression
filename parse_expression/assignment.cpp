@@ -108,7 +108,7 @@ void assignment::parse(tokenizer &tokens, std::any data) {
 	tokens.expect<expression>(lCtx);
 
 	if (tokens.decrement(__FILE__, __LINE__)) {
-		lvalue.push_back(expression(tokens, lCtx));
+		left.push_back(expression(tokens, lCtx));
 	}
 
 	while (tokens.decrement(__FILE__, __LINE__)) {
@@ -121,7 +121,7 @@ void assignment::parse(tokenizer &tokens, std::any data) {
 		tokens.expect<expression>(lCtx);
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
-			lvalue.push_back(expression(tokens, lCtx));
+			left.push_back(expression(tokens, lCtx));
 		}
 	}
 
@@ -134,7 +134,7 @@ void assignment::parse(tokenizer &tokens, std::any data) {
 		tokens.expect<expression>(rCtx);
 
 		if (tokens.decrement(__FILE__, __LINE__)) {
-			rvalue = expression(tokens, rCtx);
+			right = expression(tokens, rCtx);
 		}
 	} 
 
@@ -157,25 +157,25 @@ void assignment::register_syntax(tokenizer &tokens) {
 }
 
 string assignment::to_string(string tab) const {
-	if (not valid or (lvalue.empty() and not rvalue.valid)) {
+	if (not valid or (left.empty() and not right.valid)) {
 		return "skip";
 	}
 
 	string result = "";
 
-	if (not lvalue.empty()) {
-		for (int i = 0; i < (int)lvalue.size(); i++) {
+	if (not left.empty()) {
+		for (int i = 0; i < (int)left.size(); i++) {
 			if (i != 0) {
 				result += ",";
 			}
-			result += lvalue[i].to_string(tab);
+			result += left[i].to_string(tab);
 		}
 
 		result += operation;
 	}
 
-	if (lvalue.empty() or operation == "=") {	
-		result += rvalue.to_string(tab);
+	if (left.empty() or operation == "=") {	
+		result += right.to_string(tab);
 	}
 
 	return result;
@@ -188,8 +188,8 @@ parse::syntax *assignment::clone() const {
 config defaultCompConfig(context ctx) {
 	config cfg;
 
-	int GUARD = cfg.push<guard>(ctx);
-	int ASSIGN = cfg.push<assignment>(ctx);
+	int GUARD = cfg.push<guard>("guard", ctx);
+	int ASSIGN = cfg.push<assignment>("assign", ctx);
 
 	cfg.base = {GUARD, ASSIGN};
 

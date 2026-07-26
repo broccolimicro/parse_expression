@@ -103,9 +103,9 @@ parse::syntax *default_constant::clone() const {
 
 config defaultExprConfig() {
 	config cfg;
-	int CONSTANT = cfg.push<default_constant>();
-	int LITERAL = cfg.push<default_literal>();
-	int LABEL = cfg.push<default_literal>();
+	int CONSTANT = cfg.push<default_constant>("constant");
+	int LITERAL = cfg.push<default_literal>("literal");
+	int LABEL = cfg.push<default_literal>("label");
 
 	cfg.base = {CONSTANT, LITERAL};
 

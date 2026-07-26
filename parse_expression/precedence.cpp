@@ -25,6 +25,10 @@ bool operation::is(string prefix, string trigger, string infix, string postfix) 
 	return this->prefix == prefix and this->trigger == trigger and this->infix == infix and this->postfix == postfix;
 }
 
+bool operation::empty() const {
+	return prefix.empty() and trigger.empty() and infix.empty() and postfix.empty();
+}
+
 string operation::to_string() const {
 	string result;
 	if (not trigger.empty()) {
@@ -127,10 +131,13 @@ bool precedence_set::isGroup(int level) const {
 }
 
 precedence_set::index precedence_set::find(int type, string prefix, string trigger, string infix, string postfix) const {
-	operation search(prefix, trigger, infix, postfix);
+	return find(type, operation(prefix, trigger, infix, postfix));
+}
+
+precedence_set::index precedence_set::find(int type, operation op) const {
 	for (int i = 0; i < (int)operations.size(); i++) {
-		if (type == operations[i].type) {
-			int j = operations[i].find(search);
+		if (type < 0 or type == operations[i].type) {
+			int j = operations[i].find(op);
 			if (j >= 0) {
 				return {i, j};
 			}
@@ -181,7 +188,7 @@ ostream &operator<<(ostream &os, const precedence_set &s) {
 	return os;
 }
 
-config::config(std::initializer_list<parse::factory> literals) : literals(literals) {
+config::config(std::initializer_list<pair<std::string, parse::factory> > literals) : literals(literals) {
 	lvalueLevel = 0;
 }
 
@@ -189,8 +196,8 @@ config::~config() {
 }
 
 void config::register_syntax(tokenizer &tokens) {
-	for (parse::factory &literal : literals) {
-		literal.register_syntax(tokens);
+	for (auto &literal : literals) {
+		literal.second.register_syntax(tokens);
 	}
 }
 

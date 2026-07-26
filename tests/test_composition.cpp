@@ -31,7 +31,7 @@ TEST(AssignmentParser, BasicAssignment) {
 	assignment assign(tokens, exprCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(assign.valid);
-	EXPECT_EQ(assign.lvalue.size(), 1u);
+	EXPECT_EQ(assign.left.size(), 1u);
 	EXPECT_EQ(assign.operation, "+");
 	EXPECT_EQ(assign.to_string(), "a+");
 }
@@ -143,7 +143,7 @@ TEST(CompositionParser, InternalChoice) {
 	expression comp(tokens, compCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(comp.valid);
-	EXPECT_EQ(comp.to_string(), "(a+):(b-)");
+	EXPECT_EQ(comp.to_string(), "a+:b-");
 }
 
 TEST(CompositionParser, NestedComposition) {
@@ -161,7 +161,7 @@ TEST(CompositionParser, NestedComposition) {
 	expression comp(tokens, compCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(comp.valid);
-	EXPECT_EQ(comp.to_string(), "(a+,b+):(c-,(d+:e+))");
+	EXPECT_EQ(comp.to_string(), "a+,b+:c-,(d+:e+)");
 }
 
 TEST(CompositionParser, ComplexComposition) {
@@ -179,5 +179,5 @@ TEST(CompositionParser, ComplexComposition) {
 	expression comp(tokens, compCtx);
 	EXPECT_TRUE(tokens.is_clean());
 	EXPECT_TRUE(comp.valid);
-	EXPECT_EQ(comp.to_string(), "(a=x&y,b-):(e=c&d@f:g)");
+	EXPECT_EQ(comp.to_string(), "a=x&y,b-:e=c&d@f:g");
 }

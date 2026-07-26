@@ -21,8 +21,10 @@ struct operation {
 	string postfix;
 
 	bool is(string prefix, string trigger, string infix, string postfix) const;
+	bool empty() const;
 
 	string to_string() const;
+
 };
 
 ostream &operator<<(ostream &os, const operation &o);
@@ -77,6 +79,7 @@ struct precedence_set {
 	bool isGroup(int level) const;
 
 	index find(int type, string prefix, string trigger, string infix, string postfix) const;
+	index find(int type, operation op) const;
 	const vector<operation> &at(int level) const;
 	const operation &at(int level, int idx) const;
 	const operation &at(index i) const;
@@ -93,18 +96,18 @@ struct precedence_set {
 ostream &operator<<(ostream &os, const precedence_set &s);
 
 struct config {
-	vector<parse::factory> literals;
+	vector<pair<std::string, parse::factory> > literals;
 	vector<int> base;
 	precedence_set order;
 	int lvalueLevel;
 
-	config(std::initializer_list<parse::factory> literals={});
+	config(std::initializer_list<pair<std::string, parse::factory> > literals={});
 	~config();
 
 	template <typename T>
-	int push(std::any data=std::any()) {
+	int push(std::string label, std::any data=std::any()) {
 		int result = (int)literals.size();
-		literals.push_back(parse::factory(parse::schema::from<T>(), data));
+		literals.push_back({label, parse::factory(parse::schema::from<T>(), data)});
 		return result;
 	}
 
