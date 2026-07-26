@@ -14,6 +14,10 @@ struct rvalue : Base {
 		super::debug_name = Tag().debug_name+"_"+super::debug_name+"_rvalue";
 	}
 
+	rvalue(const Base &copy) : Base(copy) {
+		super::debug_name = Tag().debug_name+"_"+super::debug_name+"_rvalue";
+	}
+
 	rvalue(tokenizer &tokens, std::any data={}) {
 		super::debug_name = Tag().debug_name+"_"+super::debug_name+"_rvalue";
 		parse(tokens, data);
@@ -44,6 +48,10 @@ struct lvalue : Base {
 	using super = Base;
 
 	lvalue() {
+		super::debug_name = Tag().debug_name+"_"+super::debug_name+"_lvalue";
+	}
+
+	lvalue(const Base &copy) : Base(copy) {
 		super::debug_name = Tag().debug_name+"_"+super::debug_name+"_lvalue";
 	}
 
