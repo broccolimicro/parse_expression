@@ -6,13 +6,15 @@
 #include <sstream>
 #include <string>
 
+#include "config.h"
+
 using namespace std;
 
 using config = parse_expression::config;
 using context = parse_expression::context;
 using expression = parse_expression::expression;
 
-context ctx(std::make_shared<config>(parse_expression::defaultExprConfig()));
+context ctx(std::make_shared<config>(makeExprConfig()));
 
 TEST(ExpressionParser, BasicBooleanOperations) {
 	// Test simple AND, OR, NOT operations

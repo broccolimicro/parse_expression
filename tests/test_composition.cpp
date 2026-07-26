@@ -6,6 +6,8 @@
 #include <sstream>
 #include <string>
 
+#include "config.h"
+
 using namespace std;
 
 using config = parse_expression::config;
@@ -13,8 +15,8 @@ using context = parse_expression::context;
 using expression = parse_expression::expression;
 using assignment = parse_expression::assignment;
 
-context exprCtx(std::make_shared<config>(parse_expression::defaultExprConfig()));
-context compCtx(std::make_shared<config>(parse_expression::defaultCompConfig(exprCtx)));
+context exprCtx(std::make_shared<config>(makeExprConfig()));
+context compCtx(std::make_shared<config>(makeCompConfig(exprCtx)));
 
 TEST(AssignmentParser, BasicAssignment) {
 	// Test basic assignment with + operation

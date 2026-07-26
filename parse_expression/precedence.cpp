@@ -195,6 +195,10 @@ config::config(std::initializer_list<pair<std::string, parse::factory> > literal
 config::~config() {
 }
 
+void config::set_lvalue() {
+	lvalueLevel = order.size();
+}
+
 void config::register_syntax(tokenizer &tokens) {
 	for (auto &literal : literals) {
 		literal.second.register_syntax(tokens);

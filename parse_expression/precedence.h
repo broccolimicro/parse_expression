@@ -111,6 +111,8 @@ struct config {
 		return result;
 	}
 
+	void set_lvalue();
+
 	void register_syntax(tokenizer &tokens);
 };
 

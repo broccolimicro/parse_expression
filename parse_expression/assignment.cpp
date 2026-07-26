@@ -185,23 +185,4 @@ parse::syntax *assignment::clone() const {
 	return new assignment(*this);
 }
 
-config defaultCompConfig(context ctx) {
-	config cfg;
-
-	int GUARD = cfg.push<guard>("guard", ctx);
-	int ASSIGN = cfg.push<assignment>("assign", ctx);
-
-	cfg.base = {GUARD, ASSIGN};
-
-	cfg.order.push(operation_set::BINARY);
-	cfg.order.push_back("", "", ":", "");
-
-	cfg.order.push(operation_set::BINARY);
-	cfg.order.push_back("", "", ",", "");
-
-	cfg.lvalueLevel = 2;
-
-	return cfg;
-}
-
 }

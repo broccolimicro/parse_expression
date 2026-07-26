@@ -40,6 +40,4 @@ struct assignment : parse::syntax {
 	parse::syntax *clone() const;
 };
 
-config defaultCompConfig(context ctx);
-
 }

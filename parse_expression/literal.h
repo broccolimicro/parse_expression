@@ -40,6 +40,4 @@ struct default_constant : parse::syntax {
 	parse::syntax *clone() const;
 };
 
-config defaultExprConfig();
-
 }
