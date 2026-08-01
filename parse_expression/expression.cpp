@@ -18,7 +18,11 @@ expression::expression(const expression &copy) {
 	level = copy.level;
 	type = copy.type;
 	for (const argument &arg : copy.arguments) {
-		arguments.push_back({arg.type, std::shared_ptr<parse::syntax>(arg.ptr->clone())});
+		if (arg.ptr) {
+			arguments.push_back({arg.type, std::shared_ptr<parse::syntax>(arg.ptr->clone())});
+		} else {
+			arguments.push_back({arg.type, std::shared_ptr<parse::syntax>(nullptr)});
+		}
 	}
 }
 
