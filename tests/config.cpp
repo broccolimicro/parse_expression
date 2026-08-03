@@ -1,6 +1,7 @@
 #include "config.h"
 #include <parse_expression/literal.h>
 #include <parse_expression/assignment.h>
+#include <parse/wrapper.h>
 
 parse_expression::config makeExprConfig() {
 	using operation_set = parse_expression::operation_set;
@@ -8,7 +9,7 @@ parse_expression::config makeExprConfig() {
 	parse_expression::config cfg;
 	int CONSTANT = cfg.push<parse_expression::default_constant>("constant");
 	int LITERAL = cfg.push<parse_expression::default_literal>("literal");
-	int LABEL = cfg.push<parse_expression::default_literal>("label");
+	int LABEL = cfg.push<parse::wrapper<parse::instance> >("label");
 
 	cfg.base = {CONSTANT, LITERAL};
 
@@ -73,13 +74,13 @@ parse_expression::config makeExprConfig() {
 	cfg.order.push_back("", "", "", "?");
 
 	cfg.order.push(operation_set::MODIFIER);
-	cfg.order.push_back("", "'", "", "", cfg.base, {LABEL});
+	cfg.order.push_back("", "'", "", "", {LABEL});
 
 	cfg.order.push(operation_set::MODIFIER);
 	cfg.order.push_back("", "(", ",", ")");
-	cfg.order.push_back("", ".", "", "", cfg.base, {LABEL});
+	cfg.order.push_back("", ".", "", "", {LABEL});
 	cfg.order.push_back("", "[", ":", "]");
-	cfg.order.push_back("", "::", "", "", cfg.base, {LABEL});
+	cfg.order.push_back("", "::", "", "", {LABEL});
 	
 	return cfg;
 }

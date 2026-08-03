@@ -7,13 +7,15 @@ namespace parse_expression {
 
 struct operation {
 	operation();
-	operation(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType=std::vector<int>(), std::vector<int> rightType=std::vector<int>());
+	operation(string prefix, string trigger, string infix, string postfix, std::vector<int> argType=std::vector<int>());
 	~operation();
 
 	// DESIGN(edward.bingham) only used by modifiers
 	// TODO(edward.bingham) should I try to support the other types?
-	std::vector<int> leftType; // not used
-	std::vector<int> rightType;
+
+	// only active once we have seen the operator, so the left hand side won't be
+	// able to use this.
+	std::vector<int> argType;
 
 	string prefix;
 	string trigger;
@@ -52,7 +54,7 @@ struct operation_set {
 	int type;
 	vector<operation> symbols;
 
-	void push(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType=std::vector<int>(), std::vector<int> rightType=std::vector<int>());
+	void push(string prefix, string trigger, string infix, string postfix, std::vector<int> argType=std::vector<int>());
 	void push(operation op);
 	int find(operation op) const;
 };
@@ -85,7 +87,7 @@ struct precedence_set {
 	const operation &at(index i) const;
 
 	void push(int type);
-	void push_back(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType=std::vector<int>(), std::vector<int> rightType=std::vector<int>());
+	void push_back(string prefix, string trigger, string infix, string postfix, std::vector<int> argType=std::vector<int>());
 
 	bool isValidLevel(int level) const;
 

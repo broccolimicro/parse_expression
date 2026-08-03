@@ -60,7 +60,7 @@ bool expression::isGroup() const {
 }
 
 void expression::expectLiteral(tokenizer &tokens, context ctx, std::vector<int> argType) {
-	if (ctx.cfg->order.isValidLevel(ctx.level)) {
+	if (ctx.cfg->order.isValidLevel(ctx.level) and argType.empty()) {
 		tokens.expect<expression>(ctx);
 	} else {
 		if (argType.empty()) {
@@ -401,10 +401,10 @@ void expression::parse(tokenizer &tokens, std::any data) {
 				context upCtx = sub(cfg, 0);
 
 				tokens.increment(false);
-				expectLiteral(tokens, upCtx);
+				expectLiteral(tokens, upCtx, cfg->order.at(level, match[0]).argType);
 
 				if (tokens.decrement(__FILE__, __LINE__)) {
-					readLiteral(tokens, upCtx, cfg->order.at(level, match[0]).rightType);
+					readLiteral(tokens, upCtx, cfg->order.at(level, match[0]).argType);
 
 					tokens.increment(false);
 					tokens.expect(cfg->order.at(level, match[0]).infix);
@@ -416,10 +416,10 @@ void expression::parse(tokenizer &tokens, std::any data) {
 						tokens.expect(cfg->order.at(level, match[0]).infix);
 
 						tokens.increment(true);
-						expectLiteral(tokens, upCtx);
+						expectLiteral(tokens, upCtx, cfg->order.at(level, match[0]).argType);
 
 						if (tokens.decrement(__FILE__, __LINE__)) {
-							readLiteral(tokens, upCtx, cfg->order.at(level, match[0]).rightType);
+							readLiteral(tokens, upCtx, cfg->order.at(level, match[0]).argType);
 						}
 					}
 				}
@@ -431,11 +431,13 @@ void expression::parse(tokenizer &tokens, std::any data) {
 					upCtx = sub(cfg, 0);
 				}
 
+				std::vector<int> argType = cfg->order.at(level, match[0]).argType;
+
 				tokens.increment(true);
-				expectLiteral(tokens, upCtx);
+				expectLiteral(tokens, upCtx, argType);
 
 				if (tokens.decrement(__FILE__, __LINE__)) {
-					readLiteral(tokens, upCtx, cfg->order.at(level, match[0]).rightType);
+					readLiteral(tokens, upCtx, argType);
 				}
 			}
 

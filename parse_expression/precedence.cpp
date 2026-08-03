@@ -9,13 +9,12 @@ namespace parse_expression {
 operation::operation() {
 }
 
-operation::operation(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType, std::vector<int> rightType) {
+operation::operation(string prefix, string trigger, string infix, string postfix, std::vector<int> argType) {
 	this->prefix = prefix;
 	this->trigger = trigger;
 	this->infix = infix;
 	this->postfix = postfix;
-	this->leftType = leftType;
-	this->rightType = rightType;
+	this->argType = argType;
 }
 
 operation::~operation() {
@@ -71,8 +70,8 @@ operation_set::operation_set(int type) {
 operation_set::~operation_set() {
 }
 
-void operation_set::push(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType, std::vector<int> rightType) {
-	push(operation(prefix, trigger, infix, postfix, leftType, rightType));
+void operation_set::push(string prefix, string trigger, string infix, string postfix, std::vector<int> argType) {
+	push(operation(prefix, trigger, infix, postfix, argType));
 }
 
 void operation_set::push(operation op) {
@@ -163,8 +162,8 @@ void precedence_set::push(int type) {
 	operations.push_back(operation_set(type));
 }
 
-void precedence_set::push_back(string prefix, string trigger, string infix, string postfix, std::vector<int> leftType, std::vector<int> rightType) {
-	operations.back().push(prefix, trigger, infix, postfix, leftType, rightType);
+void precedence_set::push_back(string prefix, string trigger, string infix, string postfix, std::vector<int> argType) {
+	operations.back().push(prefix, trigger, infix, postfix, argType);
 }
 
 bool precedence_set::isValidLevel(int level) const {
