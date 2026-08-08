@@ -31,7 +31,8 @@ bool default_literal::is_next(tokenizer &tokens, int i, std::any data) {
 		and not tokens.is_next("false", i)
 		and not tokens.is_next("true", i)
 		and not tokens.is_next("vdd", i)
-		and not tokens.is_next("gnd", i);
+		and not tokens.is_next("gnd", i)
+		and not tokens.is_next("undef", i);
 }
 
 void default_literal::register_syntax(tokenizer &tokens) {
@@ -70,6 +71,7 @@ void default_constant::parse(tokenizer &tokens, std::any data) {
 	tokens.expect("true");
 	tokens.expect("vdd");
 	tokens.expect("gnd");
+	tokens.expect("undef");
 
 	if (tokens.decrement(__FILE__, __LINE__)) {
 		value = tokens.next();
@@ -83,7 +85,8 @@ bool default_constant::is_next(tokenizer &tokens, int i, std::any data) {
 		or tokens.is_next("false", i)
 		or tokens.is_next("true", i)
 		or tokens.is_next("vdd", i)
-		or tokens.is_next("gnd", i);
+		or tokens.is_next("gnd", i)
+		or tokens.is_next("undef", i);
 }
 
 void default_constant::register_syntax(tokenizer &tokens) {
