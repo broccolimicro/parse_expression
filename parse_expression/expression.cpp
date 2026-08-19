@@ -631,7 +631,7 @@ string expression::to_string(int prev_level, bool prev_group, string tab) const 
 			result += operators[i].postfix;
 		}
 	} else if (isModifier()) {
-		result += argument_to_string(0, level, false, tab) + operators[0].trigger;
+		result += operators[0].prefix + argument_to_string(0, level, false, tab) + operators[0].trigger;
 		for (int i = 1; i < (int)arguments.size(); i++) {
 			if (i != 1) {
 				result += operators[0].infix;
