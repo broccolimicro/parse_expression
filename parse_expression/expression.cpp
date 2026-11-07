@@ -537,6 +537,8 @@ bool expression::is_next(tokenizer &tokens, int i, std::any data) {
 		or tokens.is_next("if", i) 
 		or tokens.is_next("until", i)
 		or tokens.is_next("unless", i)
+		or tokens.is_next("xuntil", i)
+		or tokens.is_next("xunless", i)
 		or tokens.is_next("when", i)
 		or tokens.is_next("while", i)
 		or tokens.is_next("region", i)
