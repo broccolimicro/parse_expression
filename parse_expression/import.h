@@ -10,7 +10,7 @@ namespace parse_expression {
 
 template <typename T>
 struct Importer {
-	virtual T import_term(const expression::argument &syntax, tokenizer *tokens) const = 0;
+	virtual T import_term(const expression::argument &syntax, tokenizer *tokens, int arg) const = 0;
 	virtual void push_properties(operation op, const vector<expression::argument> &args, tokenizer *tokens) {
 		// default behavior is NOP
 	}
@@ -74,13 +74,13 @@ struct Importer {
 	}
 
 	// These probably don't need an overide
-	virtual T import_argument(const expression::argument &syntax, tokenizer *tokens) {
+	virtual T import_argument(const expression::argument &syntax, tokenizer *tokens, int arg) {
 		if (tokens != NULL) {
 			tokens->load(syntax.ptr.get());
 		}
 
 		if (syntax.type >= 0) {
-			return import_term(syntax, tokens);
+			return import_term(syntax, tokens, arg);
 		} else {
 			return import_expression(syntax.ptr->get<expression>(), tokens);
 		}
@@ -89,7 +89,7 @@ struct Importer {
 	virtual vector<T> import_arguments(operation op, const vector<expression::argument> &syntax, tokenizer *tokens) {
 		vector<T> result;
 		for (size_t i = 0; i < syntax.size(); i++) {
-			result.push_back(import_argument(syntax[i], tokens));
+			result.push_back(import_argument(syntax[i], tokens, i));
 		}
 		return result;
 	}
@@ -110,7 +110,7 @@ struct Importer {
 
 		if (syntax.operators.empty()) {
 			if (syntax.arguments.size() == 1u) {
-				return import_argument(syntax.arguments[0], tokens);
+				return import_argument(syntax.arguments[0], tokens, 0);
 			} else {
 				internal("", "malformed expression", __FILE__, __LINE__);
 			}
@@ -128,7 +128,7 @@ struct Importer {
 			result = import_ternary(op, import_arguments(op, syntax.arguments, tokens), tokens);
 		} else if (syntax.isBinary() or syntax.isUnary()) {
 			if (not syntax.arguments.empty()) {
-				result = import_argument(syntax.arguments[0], tokens);
+				result = import_argument(syntax.arguments[0], tokens, 0);
 			}
 
 			if (syntax.arguments.size() == 1u) {
@@ -139,7 +139,7 @@ struct Importer {
 				}
 			} else {
 				for (size_t i = 1; i < syntax.arguments.size(); i++) {
-					T sub = import_argument(syntax.arguments[i], tokens);
+					T sub = import_argument(syntax.arguments[i], tokens, i);
 					result = import_binary(syntax.operators[i-1], result, sub, tokens);
 				}
 			}
@@ -156,7 +156,7 @@ struct LValuedImporter {
 
 	virtual bool is_lvalue(const expression &syntax) const = 0;
 
-	virtual L import_term(const expression::argument &syntax, tokenizer *tokens) const = 0;
+	virtual L import_term(const expression::argument &syntax, tokenizer *tokens, int arg) const = 0;
 
 	virtual void push_properties(operation op, const vector<expression::argument> &args, tokenizer *tokens) {
 		// default behavior is NOP
@@ -275,13 +275,13 @@ struct LValuedImporter {
 	}
 
 	// These probably don't need an overide
-	virtual L import_L_argument(const expression::argument &syntax, tokenizer *tokens) {
+	virtual L import_L_argument(const expression::argument &syntax, tokenizer *tokens, int arg) {
 		if (tokens != NULL) {
 			tokens->load(syntax.ptr.get());
 		}
 
 		if (syntax.type >= 0) {
-			return import_term(syntax, tokens);
+			return import_term(syntax, tokens, arg);
 		} else {
 			const expression &expr = syntax.ptr->get<expression>();
 			if (not expr.operators.empty() and not is_lvalue(expr)) {
@@ -294,7 +294,7 @@ struct LValuedImporter {
 	virtual vector<L> import_L_arguments(operation op, const vector<expression::argument> &syntax, tokenizer *tokens) {
 		vector<L> result;
 		for (size_t i = 0; i < syntax.size(); i++) {
-			result.push_back(import_L_argument(syntax[i], tokens));
+			result.push_back(import_L_argument(syntax[i], tokens, i));
 		}
 		return result;
 	}
@@ -315,7 +315,7 @@ struct LValuedImporter {
 
 		if (syntax.operators.empty()) {
 			if (syntax.arguments.size() == 1u) {
-				return import_L_argument(syntax.arguments[0], tokens);
+				return import_L_argument(syntax.arguments[0], tokens, 0);
 			} else {
 				internal("", "malformed expression", __FILE__, __LINE__);
 			}
@@ -333,7 +333,7 @@ struct LValuedImporter {
 			result = import_ternary(op, import_L_arguments(op, syntax.arguments, tokens), tokens);
 		} else if (syntax.isBinary() or syntax.isUnary()) {
 			if (not syntax.arguments.empty()) {
-				result = import_L_argument(syntax.arguments[0], tokens);
+				result = import_L_argument(syntax.arguments[0], tokens, 0);
 			}
 
 			if (syntax.arguments.size() == 1u) {
@@ -344,7 +344,7 @@ struct LValuedImporter {
 				}
 			} else {
 				for (size_t i = 1; i < syntax.arguments.size(); i++) {
-					L sub = import_L_argument(syntax.arguments[i], tokens);
+					L sub = import_L_argument(syntax.arguments[i], tokens, i);
 					result = import_binary(syntax.operators[i-1], result, sub, tokens);
 				}
 			}
@@ -353,13 +353,13 @@ struct LValuedImporter {
 		return result;
 	}
 
-	virtual T import_T_argument(const expression::argument &syntax, tokenizer *tokens) {
+	virtual T import_T_argument(const expression::argument &syntax, tokenizer *tokens, int arg) {
 		if (tokens != NULL) {
 			tokens->load(syntax.ptr.get());
 		}
 
 		if (syntax.type >= 0) {
-			return L_to_T(import_term(syntax, tokens), tokens);
+			return L_to_T(import_term(syntax, tokens, arg), tokens);
 		} else {
 			const expression &expr = syntax.ptr->get<expression>();
 			if (not expr.operators.empty() and is_lvalue(expr)) {
@@ -372,7 +372,7 @@ struct LValuedImporter {
 	virtual vector<T> import_T_arguments(operation op, const vector<expression::argument> &syntax, tokenizer *tokens) {
 		vector<T> result;
 		for (size_t i = 0; i < syntax.size(); i++) {
-			result.push_back(import_T_argument(syntax[i], tokens));
+			result.push_back(import_T_argument(syntax[i], tokens, i));
 		}
 		return result;
 	}
@@ -393,7 +393,7 @@ struct LValuedImporter {
 
 		if (syntax.operators.empty()) {
 			if (syntax.arguments.size() == 1u) {
-				return import_T_argument(syntax.arguments[0], tokens);
+				return import_T_argument(syntax.arguments[0], tokens, 0);
 			} else {
 				internal("", "malformed expression", __FILE__, __LINE__);
 			}
@@ -411,7 +411,7 @@ struct LValuedImporter {
 			result = import_ternary(op, import_T_arguments(op, syntax.arguments, tokens), tokens);
 		} else if (syntax.isBinary() or syntax.isUnary()) {
 			if (not syntax.arguments.empty()) {
-				result = import_T_argument(syntax.arguments[0], tokens);
+				result = import_T_argument(syntax.arguments[0], tokens, 0);
 			}
 
 			if (syntax.arguments.size() == 1u) {
@@ -422,7 +422,7 @@ struct LValuedImporter {
 				}
 			} else {
 				for (size_t i = 1; i < syntax.arguments.size(); i++) {
-					T sub = import_T_argument(syntax.arguments[i], tokens);
+					T sub = import_T_argument(syntax.arguments[i], tokens, i);
 					result = import_binary(syntax.operators[i-1], result, sub, tokens);
 				}
 			}
