@@ -542,6 +542,7 @@ bool expression::is_next(tokenizer &tokens, int i, std::any data) {
 		or tokens.is_next("when", i)
 		or tokens.is_next("while", i)
 		or tokens.is_next("region", i)
+		or tokens.is_next("return", i)
 		or tokens.is_next("assume", i)
 		or tokens.is_next("var", i)) {
 		return false;
